@@ -1,0 +1,11 @@
+----Grammar----
+
+number -> digit {digit}
+digit -> "0" | "1" | .... | "9"
+
+factor = number | "(" expression ")".
+term = factor {("*" | "/") factor}.
+expression = term {("+" | "-") term}.
+computation = expression "."
+
+Start symbol is computation
