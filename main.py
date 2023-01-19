@@ -5,7 +5,8 @@ def main():
     if len(sys.argv) < 2:
         print("Please provide input string to parse")
     else:
-        p = parser.Parser(sys.argv[1])
+        args = sys.argv[1:]
+        p = parser.Parser(''.join(args))
         results = p.computation()
         for result in results:
             print(result)
