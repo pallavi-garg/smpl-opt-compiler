@@ -1,9 +1,9 @@
 """
-Parser for grammar defined in ../grammar.txt
+Parser for grammar defined in ../grammars/arithmetic_grammar.txt
 
 """
 
-class Parser:
+class Arithmetic_Parser:
 
     # constructor initialization
     def __init__(self, input_tring):

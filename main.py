@@ -1,12 +1,12 @@
 import sys
-from parsers import parser
+from parsers import arithmetic_parser as ap
 
 def main():
     if len(sys.argv) < 2:
         print("Please provide input string to parse")
     else:
         args = sys.argv[1:]
-        p = parser.Parser(''.join(args))
+        p = ap.Arithmetic_Parser(''.join(args))
         results = p.computation()
         for result in results:
             print(result)
