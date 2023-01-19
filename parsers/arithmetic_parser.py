@@ -17,6 +17,8 @@ class Arithmetic_Parser:
         val = self.__expression()
         if self.position < self.len and self.input_string[self.position] == '.':
             results.append(val)
+        else:
+            results.append("Syntax Error - missing dot at end of expression")
         
         while self.position < self.len and self.input_string[self.position] == '.':
             self.__next()
@@ -25,6 +27,7 @@ class Arithmetic_Parser:
                 if self.position < self.len and self.input_string[self.position] == '.':
                     results.append(val)
                 else:
+                    results.append("Syntax Error - missing dot at end of expression")
                     break
         return results
 
