@@ -61,7 +61,7 @@ class Arithmetic_Parser:
                 val *= self.__factor();
             elif self.input_string[self.position] == '/':
                 self.__next()
-                val = int (val/self.__factor())
+                val /= self.__factor()
         return val
 
     # calculates factor
