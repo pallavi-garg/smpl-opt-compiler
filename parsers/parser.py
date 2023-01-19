@@ -61,6 +61,7 @@ class Parser:
                 val = int (val/self.__factor())
         return val
 
+    # calculates factor
     def __factor(self):
         val = 0
         self.__skip_space()
