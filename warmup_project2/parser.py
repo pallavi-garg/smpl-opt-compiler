@@ -20,7 +20,7 @@ class Parser:
     def __consume(self, tokenType):
         consumed_token = self.tokenizer.next()
         if(consumed_token == None or consumed_token.type != tokenType):
-            print(tokenType + " not found!")
+            self.__syntax_error(tokenType + " type not found")
         return consumed_token
     
     # entry point for this parser
@@ -43,7 +43,7 @@ class Parser:
             self.symbol_table[id] = self.__expression()
             self.__consume(Smpl_Token.SemiColon)
         else:
-             print("Expected identifier but not found")
+             self.__syntax_error("Expected identifier but not found")
 
     # calculates expression
     def __expression(self):
@@ -73,7 +73,7 @@ class Parser:
                 if self.tokenizer.token and self.tokenizer.token.type == Smpl_Token.CloseParanthesis:
                     self.__consume(Smpl_Token.CloseParanthesis)
                 else:
-                    print("Expected ) but not found")
+                    self.__syntax_error("Expected ) but not found")
             elif self.tokenizer.token.type == Smpl_Token.Number:
                 val = self.tokenizer.token.val
                 self.__consume(Smpl_Token.Number)
@@ -81,7 +81,7 @@ class Parser:
                 val = self.__look_up(self.tokenizer.token.id)
                 self.__consume(Smpl_Token.Identifier)
         else:
-            print("Syntax error in factor")
+            self.__syntax_error("Syntax error in factor")
         return val
 
     def __perform_operation(self, token_type, first_operand, second_operand):
@@ -94,6 +94,9 @@ class Parser:
                 return first_operand * second_operand
             case Smpl_Token.Div:
                 return first_operand / second_operand
+
+    def __syntax_error(self, error):
+        raise Exception("Syntax Error: " + error)
 
 
 

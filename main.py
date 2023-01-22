@@ -7,7 +7,10 @@ def main():
     else:
         args = sys.argv[1:]
         p = Parser(''.join(args))
-        p.computation()
+        try:
+            p.computation()
+        except Exception as ex:
+            print(ex.args[0])
 
 if __name__ == "__main__":
     sys.exit(main())
