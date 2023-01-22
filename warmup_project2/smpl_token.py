@@ -7,8 +7,8 @@ class Keywords:
         self.__initialize_keywords()
 
     def __initialize_keywords(self):
-        self.reserved_token_list.append(Smpl_Token.Computation)
         self.reserved_token_list.append(Smpl_Token.Identifier)
+        self.reserved_token_list.append(Smpl_Token.Computation)
         self.reserved_token_list.append(Smpl_Token.Var)
         self.reserved_token_list.append(Smpl_Token.Number)
         self.reserved_token_list.append(Smpl_Token.Assignment)
