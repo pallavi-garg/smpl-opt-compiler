@@ -82,7 +82,7 @@ class Arithmetic_Parser:
                 val = val * 10 + ord(self.input_string[self.position]) - 48;
                 self.__next()
         self.__skip_space()
-        return val;
+        return val
 
 
     
