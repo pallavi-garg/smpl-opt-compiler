@@ -3,14 +3,14 @@ Parser for grammar defined in ../grammars/arithmetic_grammar_with_variables.txt
 
 """
 
-import tokenizer
-from smpl_token import Smpl_Token
+from .tokenizer import Tokenizer
+from .smpl_token import Smpl_Token
 
 class Parser:
     
     # constructor initialization
     def __init__(self, input_string):
-        self.tokenizer = tokenizer.tokenizer(input_string)
+        self.tokenizer = Tokenizer(input_string)
         self.symbol_table = {}
 
     def __look_up(self, id):
@@ -19,8 +19,8 @@ class Parser:
     #tokenType - Smpl_Token
     def __consume(self, tokenType):
         consumed_token = self.tokenizer.next()
-        if(consumed_token.type != tokenType):
-            print(tokenType + " not found")
+        if(consumed_token == None or consumed_token.type != tokenType):
+            print(tokenType + " not found!")
         return consumed_token
     
     # entry point for this parser
@@ -28,17 +28,20 @@ class Parser:
         self.__consume(Smpl_Token.Computation)
         while self.tokenizer.token and self.tokenizer.token.type == Smpl_Token.Var:
             self.__variable_declaration()
+        print(self.__expression())
         while self.tokenizer.token and self.tokenizer.token.type == Smpl_Token.SemiColon:
-            statement_result = self.__expression()
-            print(statement_result)
+            self.__consume(Smpl_Token.SemiColon)
+            print(self.__expression())
         self.__consume(Smpl_Token.Period)
         
     def __variable_declaration(self):
         self.__consume(Smpl_Token.Var)
         if self.tokenizer.token and self.tokenizer.token.type == Smpl_Token.Identifier:
             id = self.tokenizer.token.id
+            self.__consume(Smpl_Token.Identifier)
             self.__consume(Smpl_Token.Assignment)
             self.symbol_table[id] = self.__expression()
+            self.__consume(Smpl_Token.SemiColon)
         else:
              print("Expected identifier but not found")
 
@@ -46,16 +49,18 @@ class Parser:
     def __expression(self):
         val = self.__term()
         while self.tokenizer.token and (self.tokenizer.token.type == Smpl_Token.Plus or self.tokenizer.token.type == Smpl_Token.Minus):
-            self.__consume(self.tokenizer.token.type)
-            val = self.__perform_operation(self.tokenizer.token.type, val, self.__term())
+            token_type = self.tokenizer.token.type
+            self.__consume(token_type)
+            val = self.__perform_operation(token_type, val, self.__term())
         return val
 
     # calculates term
     def __term(self):
         val = self.__factor()
         while self.tokenizer.token and (self.tokenizer.token.type == Smpl_Token.Mul or self.tokenizer.token.type == Smpl_Token.Div):
-            self.__consume(self.tokenizer.token.type)
-            val = self.__perform_operation(self.tokenizer.token.type, val, self.__factor())
+            token_type = self.tokenizer.token.type
+            self.__consume(token_type)
+            val = self.__perform_operation(token_type, val, self.__factor())
         return val
 
     # calculates factor
