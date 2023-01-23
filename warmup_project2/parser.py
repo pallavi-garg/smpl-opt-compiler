@@ -26,6 +26,8 @@ class Parser:
 
     def __look_up(self, id):
     # returns value of variable with id
+        if(id not in self.symbol_table):
+           self. __syntax_error("Undefined identifier - " + id)
         return self.symbol_table[id]
 
     def __consume(self, tokenType):
