@@ -4,6 +4,7 @@ Instructions:
 run following command to run the program:
 
     For project 1:
+        cd warmup_project1
         python3.11 main_project1.py 1+2.
     For project 2:
         python3.11 main.py "computation var i <- 2*3; var ab <- 7; (((ab * i))); i - 5 - 1 ."

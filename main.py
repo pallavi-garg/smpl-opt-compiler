@@ -8,7 +8,9 @@ def main():
         args = sys.argv[1:]
         p = Parser(''.join(args))
         try:
-            p.computation()
+            results = p.computation()
+            for result in results:
+                print(result)
         except Exception as ex:
             print(ex.args[0])
 

@@ -1,5 +1,5 @@
 import sys
-from parsers_warmup_project1  import arithmetic_parser as ap
+import arithmetic_parser as ap
 
 def main():
     if len(sys.argv) < 2:

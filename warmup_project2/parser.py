@@ -15,14 +15,16 @@ class Parser:
     
     def computation(self):
     # entry point for this parser
+        results = []
         self.__consume(Token_Type.Computation)
         while self.tokenizer.token and self.tokenizer.token.type == Token_Type.Var:
             self.__variable_declaration()
-        print(self.__expression())
+        results.append(self.__expression())
         while self.tokenizer.token and self.tokenizer.token.type == Token_Type.SemiColon:
             self.__consume(Token_Type.SemiColon)
-            print(self.__expression())
+            results.append(self.__expression())
         self.__consume(Token_Type.Period)
+        return results
 
     def __look_up(self, id):
     # returns value of variable with id
