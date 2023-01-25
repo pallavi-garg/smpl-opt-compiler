@@ -29,6 +29,12 @@ class Parser:
         if(id not in self.symbol_table):
            self. __syntax_error("Undefined identifier - " + id)
         return self.symbol_table[id]
+    
+    def __insert_identifier(self, id):
+        self.symbol_table[id] = 0
+    
+    def __insert_identifier(self, id, value):
+        self.symbol_table[id] = value
 
     def __consume(self, tokenType):
     # tokenType - Token_Type
@@ -44,7 +50,7 @@ class Parser:
             id = self.tokenizer.token.id
             self.__consume(Token_Type.Identifier)
             self.__consume(Token_Type.Assignment)
-            self.symbol_table[id] = self.__expression()
+            self.__insert_identifier(id, self.__expression())
             self.__consume(Token_Type.SemiColon)
         else:
              self.__syntax_error("Expected identifier but not found")
