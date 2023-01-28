@@ -7,4 +7,7 @@ run following command to run the program:
         cd warmup_project1
         python3.11 main_project1.py 1+2.
     For project 2:
+        cd warmup_project2
         python3.11 main.py "computation var i <- 2*3; var ab <- 7; (((ab * i))); i - 5 - 1 ."
+    For main project:
+        python3.11 compiler.py "main var i <- 2*3; var ab <- 7; (((ab * i))); i - 5 - 1 ."
