@@ -3,14 +3,14 @@ Parser for grammar defined in ../grammars/arithmetic_grammar_with_variables.txt
 
 """
 
-from .tokenizer import Tokenizer
-from .token_types import Token_Type
+import tokenizer as t
+from token_types import Token_Type
 
 class Parser:
     
     def __init__(self, input_string):
     # constructor initialization
-        self.tokenizer = Tokenizer(input_string)
+        self.tokenizer = t.Tokenizer(input_string)
         self.symbol_table = {}
     
     def computation(self):

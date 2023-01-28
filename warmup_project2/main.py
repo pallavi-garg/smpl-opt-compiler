@@ -1,12 +1,12 @@
 import sys
-from warmup_project2.parser import Parser
+import project2_parser as pa
 
 def main():
     if len(sys.argv) < 2:
         print("Please provide input string to parse")
     else:
         args = sys.argv[1:]
-        p = Parser(''.join(args))
+        p = pa.Parser(''.join(args))
         try:
             results = p.computation()
             for result in results:

@@ -1,4 +1,4 @@
-from .token_types import Token_Type
+from token_types import Token_Type
 import re
 
 class Token:
