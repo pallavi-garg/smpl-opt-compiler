@@ -42,6 +42,7 @@ class Parser:
         return self.symbol_table[id]
     
     def __insert_identifier(self, id, value = 0):
+    # inserts identifier in symbol table
         self.symbol_table[id] = value
     
     def __consume(self, tokenType):
@@ -52,6 +53,7 @@ class Parser:
         return consumed_token
 
     def __consume_type_declaration(self):
+    # consumes type declaration
         while self.tokenizer.token and self.tokenizer.token.type == Token_Type.Var:
             while self.tokenizer.token and self.tokenizer.token.type in [Token_Type.Var, Token_Type.Comma]:
                 self.__consume(self.tokenizer.token.type)
@@ -61,9 +63,11 @@ class Parser:
                 self.__consume(Token_Type.SemiColon)
 
     def __consume_fn_declarations(self):
+    # consumes function declaration
         pass
 
     def __consume_sequence_statements(self):
+    # consumes multiple statement declarations
         while self.tokenizer.token and self.tokenizer.token.type in self.statement_starter:
             statement_type = self.tokenizer.token.type
             self.__consume(statement_type)
@@ -80,6 +84,7 @@ class Parser:
                     self.__syntax_error("Expected statement separator - " + Token_Type.SemiColon + "'")
 
     def __handle_function_call(self):
+    # handles predefined function call
         while self.tokenizer.token and self.tokenizer.token.type == Token_Type.Fn_OutputNum:
             self.__consume(self.tokenizer.token.type)
             self.__consume(Token_Type.OpenParanthesis)
@@ -87,6 +92,7 @@ class Parser:
             self.__consume(Token_Type.CloseParanthesis)
         
     def __handle_assignment(self):
+    # handles assignment to identifier
         if self.tokenizer.token and self.tokenizer.token.type == Token_Type.Identifier:
             id = self.tokenizer.token.id
             self.__consume(Token_Type.Identifier)
@@ -155,9 +161,3 @@ class Parser:
                 return first_operand * second_operand
             case Token_Type.Div:
                 return first_operand / second_operand
-
-
-
-    
-    
-
