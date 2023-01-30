@@ -14,8 +14,9 @@ class Parser:
     # constructor initialization
         self.tokenizer = Tokenizer(input_string)
         self.symbol_table = {}
-        self.undeclared_variables = {}
+        self.uninitialized_variables = {}
         self.results = []
+        self.warnings = []
 
     def parse(self):
     # entry point for this parser
@@ -26,16 +27,18 @@ class Parser:
         self.__consume_sequence_statements()
         self.__consume(Token_Type.End)
         self.__consume(Token_Type.Period)
-        return self.results, self.__get_warnings()
+        return self.results
 
     def __syntax_error(self, error):
     # throws exception
-        raise Exception("Syntax Error: " + error)
+        raise Exception(f"Syntax Error at line:{self.tokenizer.line_number} -> {error}")
 
     def __look_up(self, id):
     # returns value of variable with id
         if(id not in self.symbol_table):
-           self. __syntax_error("Undefined identifier - '" + id + "'")
+           self.__syntax_error("Undefined identifier - '" + id + "'")
+        if(self.uninitialized_variables[id]):
+            self.warnings.append(f"Warning at line:{self.tokenizer.line_number} -> Using uninitialized variable")
         return self.symbol_table[id]
     
     def __insert_identifier(self, id, value = 0):
@@ -45,15 +48,8 @@ class Parser:
     # tokenType - Token_Type
         consumed_token = self.tokenizer.next()
         if(consumed_token == None or consumed_token.type != tokenType):
-            self.__syntax_error(tokenType + " type not found")
+            self.__syntax_error(f"Expected '{tokenType}' but not found")
         return consumed_token
-
-    def __get_warnings(self):
-        warnings = []
-        for variable in self.undeclared_variables:
-            if(self.undeclared_variables[variable]):
-                warnings.append("Warning: Variable '" + variable + "' is uninitialized")
-        return warnings
 
     def __consume_type_declaration(self):
         while self.tokenizer.token and self.tokenizer.token.type == Token_Type.Var:
@@ -96,14 +92,14 @@ class Parser:
             self.__consume(Token_Type.Identifier)
             self.__consume(Token_Type.Assignment)
             self.__insert_identifier(id, self.__expression())
-            self.undeclared_variables[id] = False
+            self.uninitialized_variables[id] = False
         else:
             self.__syntax_error("Expected identifier assignment")
 
     def __variable_declaration(self):
     # handle variable declaration
         if self.tokenizer.token and self.tokenizer.token.type == Token_Type.Identifier:
-            self.undeclared_variables[self.tokenizer.token.id] = True
+            self.uninitialized_variables[self.tokenizer.token.id] = True
             self.__insert_identifier(self.tokenizer.token.id)
             self.__consume(Token_Type.Identifier)
         else:

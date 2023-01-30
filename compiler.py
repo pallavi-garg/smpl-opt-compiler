@@ -3,6 +3,11 @@ from main_project.parser import Parser
 from main_project.file_reader import File_Reader
 import argparse
 
+def print_warnings(parser):
+    if parser.warnings:
+            for warning in parser.warnings:
+                print(warning)
+
 def compile():
 
     arg_parser = argparse.ArgumentParser(description="Compiles code of smpl language.")
@@ -12,13 +17,12 @@ def compile():
     try:
         reader = File_Reader(args.file_path)
         p = Parser(reader.get_contents())
-        results, warnings = p.parse()
-        if warnings:
-            for warning in warnings:
-                print(warning)
+        results = p.parse()
+        print_warnings(p)
         for result in results:
             print(result)
     except Exception as ex:
+        print_warnings(p)
         print(ex)
         return -1
     

@@ -13,6 +13,7 @@ class Tokenizer:
         # represents the token just read
         self.token = None
         self.next()
+        self.line_number = 1
 
     def next(self):
     # return current token and tokenize the next token
@@ -25,6 +26,8 @@ class Tokenizer:
     def tokenize(self):
     # updates self.token
         while self.position < self.input_length and self.input_string[self.position].isspace():
+            if self.input_string[self.position] == '\n':
+                self.line_number += 1
             self.position += 1
             
         curr_input_str = self.input_string[self.position:]
