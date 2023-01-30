@@ -1,0 +1,1 @@
+main var i <- 2*3; var ab <- 7; (((ab * i))); i - 5 - 1 .
