@@ -10,4 +10,4 @@ run following command to run the program:
         cd warmup_project2
         python3.11 main.py "computation var i <- 2*3; var ab <- 7; (((ab * i))); i - 5 - 1 ."
     For main project:
-        python3.11 compiler.py "main var i <- 2*3; var ab <- 7; (((ab * i))); i - 5 - 1 ."
+        python3.11 compiler.py testfiles/test1.smpl
