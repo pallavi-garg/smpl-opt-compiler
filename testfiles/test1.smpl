@@ -1,1 +1,8 @@
-main var i <- 2*3; var ab <- 7; (((ab * i))); i - 5 - 1 .
+main 
+var i, ab; 
+{
+let i <- 10;
+let i <- 20;
+call OutputNum(i*i+1);
+call OutputNum(10)
+} .

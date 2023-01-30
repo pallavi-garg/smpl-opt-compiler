@@ -8,56 +8,104 @@ from .token_types import Token_Type
 
 class Parser:
     
+    statement_starter = [Token_Type.Let, Token_Type.If, Token_Type.While, Token_Type.Return, Token_Type.Call]
+
     def __init__(self, input_string):
     # constructor initialization
         self.tokenizer = Tokenizer(input_string)
         self.symbol_table = {}
-        self.warnings = []
-    
-    def computation(self):
+        self.undeclared_variables = {}
+        self.results = []
+
+    def parse(self):
     # entry point for this parser
-        results = []
-        self.__consume(Token_Type.Computation)
-        while self.tokenizer.token and self.tokenizer.token.type == Token_Type.Var:
-            self.__variable_declaration()
-        results.append(self.__expression())
-        while self.tokenizer.token and self.tokenizer.token.type == Token_Type.SemiColon:
-            self.__consume(Token_Type.SemiColon)
-            results.append(self.__expression())
+        self.__consume(Token_Type.Main)
+        self.__consume_type_declaration()
+        self.__consume_fn_declarations()
+        self.__consume(Token_Type.Begin)
+        self.__consume_sequence_statements()
+        self.__consume(Token_Type.End)
         self.__consume(Token_Type.Period)
-        return results, self.warnings
+        return self.results, self.__get_warnings()
+
+    def __syntax_error(self, error):
+    # throws exception
+        raise Exception("Syntax Error: " + error)
 
     def __look_up(self, id):
     # returns value of variable with id
         if(id not in self.symbol_table):
-           self. __syntax_error("Undefined identifier - " + id)
+           self. __syntax_error("Undefined identifier - '" + id + "'")
         return self.symbol_table[id]
     
     def __insert_identifier(self, id, value = 0):
         self.symbol_table[id] = value
-
+    
     def __consume(self, tokenType):
     # tokenType - Token_Type
         consumed_token = self.tokenizer.next()
         if(consumed_token == None or consumed_token.type != tokenType):
             self.__syntax_error(tokenType + " type not found")
         return consumed_token
+
+    def __get_warnings(self):
+        warnings = []
+        for variable in self.undeclared_variables:
+            if(self.undeclared_variables[variable]):
+                warnings.append("Warning: Variable '" + variable + "' is uninitialized")
+        return warnings
+
+    def __consume_type_declaration(self):
+        while self.tokenizer.token and self.tokenizer.token.type == Token_Type.Var:
+            while self.tokenizer.token and self.tokenizer.token.type in [Token_Type.Var, Token_Type.Comma]:
+                self.__consume(self.tokenizer.token.type)
+                self.__variable_declaration()
+            # if there are multiple semi colons, consume them
+            while(self.tokenizer.token and self.tokenizer.token.type == Token_Type.SemiColon):
+                self.__consume(Token_Type.SemiColon)
+
+    def __consume_fn_declarations(self):
+        pass
+
+    def __consume_sequence_statements(self):
+        while self.tokenizer.token and self.tokenizer.token.type in self.statement_starter:
+            statement_type = self.tokenizer.token.type
+            self.__consume(statement_type)
+            match statement_type:
+                case Token_Type.Let:
+                    self.__handle_assignment()
+                case Token_Type.Call:
+                    self.__handle_function_call()
+                case _:
+                    self.__syntax_error("Undefined statement")
+            if self.tokenizer.token and self.tokenizer.token.type == Token_Type.SemiColon:
+                self.__consume(Token_Type.SemiColon)
+            elif (self.tokenizer.token and self.tokenizer.token.type in self.statement_starter):
+                    self.__syntax_error("Expected statement separator - " + Token_Type.SemiColon + "'")
+
+    def __handle_function_call(self):
+        while self.tokenizer.token and self.tokenizer.token.type == Token_Type.Fn_OutputNum:
+            self.__consume(self.tokenizer.token.type)
+            self.__consume(Token_Type.OpenParanthesis)
+            self.results.append(self.__expression())
+            self.__consume(Token_Type.CloseParanthesis)
         
-    def __variable_declaration(self):
-    # handle variable declaration
-        self.__consume(Token_Type.Var)
+    def __handle_assignment(self):
         if self.tokenizer.token and self.tokenizer.token.type == Token_Type.Identifier:
             id = self.tokenizer.token.id
             self.__consume(Token_Type.Identifier)
-            if self.tokenizer.token is not None:
-                if self.tokenizer.token.type == Token_Type.Assignment:
-                    self.__consume(Token_Type.Assignment)
-                    self.__insert_identifier(id, self.__expression())
-                else:
-                    # if added identifier table later, need to convert id to user defined name
-                    self.warnings.append("Warning: Uninitialized identifier - " + id)
-                    self.__insert_identifier(id)
-            self.__consume(Token_Type.SemiColon)
+            self.__consume(Token_Type.Assignment)
+            self.__insert_identifier(id, self.__expression())
+            self.undeclared_variables[id] = False
+        else:
+            self.__syntax_error("Expected identifier assignment")
+
+    def __variable_declaration(self):
+    # handle variable declaration
+        if self.tokenizer.token and self.tokenizer.token.type == Token_Type.Identifier:
+            self.undeclared_variables[self.tokenizer.token.id] = True
+            self.__insert_identifier(self.tokenizer.token.id)
+            self.__consume(Token_Type.Identifier)
         else:
              self.__syntax_error("Expected identifier but not found")
 
@@ -111,10 +159,6 @@ class Parser:
                 return first_operand * second_operand
             case Token_Type.Div:
                 return first_operand / second_operand
-
-    def __syntax_error(self, error):
-    # throws exception
-        raise Exception("Syntax Error: " + error)
 
 
 

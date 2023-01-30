@@ -12,9 +12,10 @@ def compile():
     try:
         reader = File_Reader(args.file_path)
         p = Parser(reader.get_contents())
-        results, warnings = p.computation()
-        for warning in warnings:
-            print(warning)
+        results, warnings = p.parse()
+        if warnings:
+            for warning in warnings:
+                print(warning)
         for result in results:
             print(result)
     except Exception as ex:

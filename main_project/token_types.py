@@ -15,7 +15,7 @@ class Token_Type:
     Identifier = re.compile(r"[a-zA-Z]([a-zA-Z0-9]+)?")
     Comma = ','
     SemiColon = ';'
-    Computation = 'main'
+    Main = 'main'
     Var = 'var'
     Let = 'let'
     Equals = '=='
@@ -28,6 +28,10 @@ class Token_Type:
     If = 'if'
     Fi = 'fi'
     Else = 'else'
+    While = 'while'
+    Return = 'return'
+    Call = 'call'
+    Fn_OutputNum = 'OutputNum'
 
 
     def __init__(self):
@@ -65,9 +69,13 @@ class Token_Type:
         #fourse letter size
         self.reserved_token_list.append(self.Else)
         self.reserved_token_list.append(self.Then)
+        self.reserved_token_list.append(self.Call)
 
         #bigger
-        self.reserved_token_list.append(self.Computation)
+        self.reserved_token_list.append(self.While)
+        self.reserved_token_list.append(self.Return)
+        self.reserved_token_list.append(self.Fn_OutputNum)
+        self.reserved_token_list.append(self.Main)
 
         #regex
         self.reserved_token_list.append(self.Number)
