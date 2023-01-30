@@ -2,7 +2,6 @@ main
 var i, ab; 
 {
 let i <- 10;
-let i <- 20;
-call OutputNum(i*i+1);
-call OutputNum(10)
+let ab <- 20;
+call OutputNum(i*ab);
 } .
