@@ -1,7 +1,7 @@
 main 
 var i, ab; 
 {
-let i <- 10;
+let i <- call InputNum();
 let ab <- 20;
 call OutputNum(i*ab);
 } .

@@ -97,7 +97,15 @@ class Parser:
             id = self.tokenizer.token.id
             self.__consume(Token_Type.Identifier)
             self.__consume(Token_Type.Assignment)
-            self.__insert_identifier(id, self.__expression())
+            if self.tokenizer.token and self.tokenizer.token.type == Token_Type.Call:
+                self.__consume(Token_Type.Call)
+                self.__consume(Token_Type.Fn_InputNum)
+                self.__consume(Token_Type.OpenParanthesis)
+                self.__consume(Token_Type.CloseParanthesis)
+                # remove this and add code to create read instruction
+                self.__insert_identifier(id, 100)
+            else:
+                self.__insert_identifier(id, self.__expression())
             self.uninitialized_variables[id] = False
         else:
             self.__syntax_error("Expected identifier assignment")

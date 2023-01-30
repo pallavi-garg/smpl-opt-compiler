@@ -32,6 +32,7 @@ class Token_Type:
     Return = 'return'
     Call = 'call'
     Fn_OutputNum = 'OutputNum'
+    Fn_InputNum = 'InputNum'
 
 
     def __init__(self):
@@ -66,16 +67,17 @@ class Token_Type:
         self.reserved_token_list.append(self.Var)
         self.reserved_token_list.append(self.Let)
 
-        #fourse letter size
+        #four letter size
         self.reserved_token_list.append(self.Else)
         self.reserved_token_list.append(self.Then)
         self.reserved_token_list.append(self.Call)
+        self.reserved_token_list.append(self.Main)
 
         #bigger
         self.reserved_token_list.append(self.While)
         self.reserved_token_list.append(self.Return)
+        self.reserved_token_list.append(self.Fn_InputNum)
         self.reserved_token_list.append(self.Fn_OutputNum)
-        self.reserved_token_list.append(self.Main)
 
         #regex
         self.reserved_token_list.append(self.Number)
