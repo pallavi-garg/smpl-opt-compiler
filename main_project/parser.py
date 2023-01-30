@@ -12,6 +12,7 @@ class Parser:
     # constructor initialization
         self.tokenizer = Tokenizer(input_string)
         self.symbol_table = {}
+        self.warnings = []
     
     def computation(self):
     # entry point for this parser
@@ -24,7 +25,7 @@ class Parser:
             self.__consume(Token_Type.SemiColon)
             results.append(self.__expression())
         self.__consume(Token_Type.Period)
-        return results
+        return results, self.warnings
 
     def __look_up(self, id):
     # returns value of variable with id
@@ -32,10 +33,7 @@ class Parser:
            self. __syntax_error("Undefined identifier - " + id)
         return self.symbol_table[id]
     
-    def __insert_identifier(self, id):
-        self.symbol_table[id] = 0
-    
-    def __insert_identifier(self, id, value):
+    def __insert_identifier(self, id, value = 0):
         self.symbol_table[id] = value
 
     def __consume(self, tokenType):
@@ -51,8 +49,14 @@ class Parser:
         if self.tokenizer.token and self.tokenizer.token.type == Token_Type.Identifier:
             id = self.tokenizer.token.id
             self.__consume(Token_Type.Identifier)
-            self.__consume(Token_Type.Assignment)
-            self.__insert_identifier(id, self.__expression())
+            if self.tokenizer.token is not None:
+                if self.tokenizer.token.type == Token_Type.Assignment:
+                    self.__consume(Token_Type.Assignment)
+                    self.__insert_identifier(id, self.__expression())
+                else:
+                    # if added identifier table later, need to convert id to user defined name
+                    self.warnings.append("Warning: Uninitialized identifier - " + id)
+                    self.__insert_identifier(id)
             self.__consume(Token_Type.SemiColon)
         else:
              self.__syntax_error("Expected identifier but not found")
