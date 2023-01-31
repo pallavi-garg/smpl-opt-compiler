@@ -29,10 +29,13 @@ class Basic_Block:
         return num
 
     def __init__(self, dominant_block = None):
-        self.name = f'BB{Basic_Block.get_next_ir_number()}'
+        self.__name = f'BB{Basic_Block.get_next_ir_number()}'
         self.dominant_block = dominant_block
         self.branch_block = None
         self.fall_through_block = None
         self.instructions = []
         self.use_chain = {}
         self.symbold_table = {}
+    
+    def __str__(self):
+        return f"({self.__name})"

@@ -1,3 +1,4 @@
+import numbers
 
 class IR:
 # Intermediate Representation
@@ -12,12 +13,27 @@ class IR:
     def __init__(self, op_code):
         self.instruction_number = IR.get_next_ir_number()
         self.op_code = op_code
+
+    def __str__(self):
+        return f"({self.instruction_number})' : '{self.op_code}"
     
 class IR_One_Operand(IR):
 # Intermediate Representation with 1 operand
     def __init__(self, op_code, operand):
         super().__init__(op_code)
         self.operand = operand
+    
+    def __str__(self):
+        return f"({self.instruction_number})' : '{self.op_code}' '{self.format_operand(self.operand)}"
+    
+    def format_operand(self, operand):
+        if(isinstance(operand, numbers.Number)):
+            return f"#{operand}"
+        elif(isinstance(operand, IR)):
+            return f"({operand.instruction_number})"
+        else:
+            return f"{operand}"
+
 
 class IR_Two_Operand(IR):
 # Intermediate Representation with 2 operands
@@ -25,6 +41,9 @@ class IR_Two_Operand(IR):
         super().__init__(op_code)
         self.operan1 = operand1
         self.operan2 = operand2
+    
+    def __str__(self):
+        return f"({self.instruction_number})' : '{self.op_code}' '{self.format_operand(self.operand)}' '{self.format_operand(self.operand)}"
 
 class IR_OP:
     add = 'add' # add x y       -> x+y
@@ -44,3 +63,5 @@ class IR_OP:
     adda = 'adda'   # adda x,y  -> add two addresses x and y (used with arrays)
     load = 'load'   # load x,y  -> load from memory address y
     store = 'store' # store x,y -> store y to memory x
+
+    const = 'const' # const x   -> create constant x
