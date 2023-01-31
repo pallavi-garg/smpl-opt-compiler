@@ -38,4 +38,4 @@ class Basic_Block:
         self.symbold_table = {}
     
     def __str__(self):
-        return f"({self.__name})"
+        return f"{self.__name}"
