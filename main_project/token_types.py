@@ -31,8 +31,8 @@ class Token_Type:
     While = 'while'
     Return = 'return'
     Call = 'call'
-    Fn_OutputNum = 'OutputNum'
-    Fn_InputNum = 'InputNum'
+    Fn_OutputNum = 'OutputNum('
+    Fn_InputNum = 'InputNum('
 
 
     def __init__(self):

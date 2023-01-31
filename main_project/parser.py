@@ -5,6 +5,8 @@ Parser for grammar defined in ../grammars/smpl_grammar.txt
 
 from .tokenizer import Tokenizer
 from .token_types import Token_Type
+from .intermediate_representation import IR, IR_One_Operand, IR_Two_Operand
+from .cfg import Control_Flow_Graph, Basic_Block as bb
 
 class Parser:
     
@@ -17,6 +19,8 @@ class Parser:
         self.uninitialized_variables = {}
         self.results = []
         self.warnings = []
+        self.cfg = Control_Flow_Graph()
+        self.root_block = self.cfg.get_root()
 
     def parse(self):
     # entry point for this parser
@@ -87,7 +91,6 @@ class Parser:
     # handles predefined function call
         while self.tokenizer.token and self.tokenizer.token.type == Token_Type.Fn_OutputNum:
             self.__consume(self.tokenizer.token.type)
-            self.__consume(Token_Type.OpenParanthesis)
             self.results.append(self.__expression())
             self.__consume(Token_Type.CloseParanthesis)
         
@@ -100,7 +103,6 @@ class Parser:
             if self.tokenizer.token and self.tokenizer.token.type == Token_Type.Call:
                 self.__consume(Token_Type.Call)
                 self.__consume(Token_Type.Fn_InputNum)
-                self.__consume(Token_Type.OpenParanthesis)
                 self.__consume(Token_Type.CloseParanthesis)
                 # remove this and add code to create read instruction
                 self.__insert_identifier(id, 100)
