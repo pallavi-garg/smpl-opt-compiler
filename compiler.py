@@ -17,10 +17,8 @@ def compile():
     try:
         reader = File_Reader(args.file_path)
         p = Parser(reader.get_contents())
-        results = p.parse()
+        p.parse()
         print_warnings(p)
-        for result in results:
-            print(result)
     except Exception as ex:
         print_warnings(p)
         print(ex)

@@ -13,18 +13,10 @@ class IR:
     def __init__(self, op_code):
         self.instruction_number = IR.get_next_ir_number()
         self.op_code = op_code
+        self.prev_search_ds = None
 
     def __str__(self):
-        return f"({self.instruction_number})' : '{self.op_code}"
-    
-class IR_One_Operand(IR):
-# Intermediate Representation with 1 operand
-    def __init__(self, op_code, operand):
-        super().__init__(op_code)
-        self.operand = operand
-    
-    def __str__(self):
-        return f"({self.instruction_number})' : '{self.op_code}' '{self.format_operand(self.operand)}"
+        return f"({self.instruction_number}) : {self.op_code}"
     
     def format_operand(self, operand):
         if(isinstance(operand, numbers.Number)):
@@ -33,17 +25,26 @@ class IR_One_Operand(IR):
             return f"({operand.instruction_number})"
         else:
             return f"{operand}"
+    
+class IR_One_Operand(IR):
+# Intermediate Representation with 1 operand
+    def __init__(self, op_code, operand):
+        super().__init__(op_code)
+        self.operand = operand
+    
+    def __str__(self):
+        return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.operand)}"
 
 
 class IR_Two_Operand(IR):
 # Intermediate Representation with 2 operands
     def __init__(self, op_code, operand1, operand2):
         super().__init__(op_code)
-        self.operan1 = operand1
-        self.operan2 = operand2
+        self.operand1 = operand1
+        self.operand2 = operand2
     
     def __str__(self):
-        return f"({self.instruction_number})' : '{self.op_code}' '{self.format_operand(self.operand)}' '{self.format_operand(self.operand)}"
+        return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.operand1)} {self.format_operand(self.operand2)}"
 
 class IR_OP:
     add = 'add' # add x y       -> x+y
@@ -65,3 +66,6 @@ class IR_OP:
     store = 'store' # store x,y -> store y to memory x
 
     const = 'const' # const x   -> create constant x
+    read = 'read' # read        -> for built-in function InputNum()
+    write = 'write' # write x   -> for built-in function OutputNum(x)
+    writeNL = 'writeNL' # writeNL -> for built-in function OutputNewLine()

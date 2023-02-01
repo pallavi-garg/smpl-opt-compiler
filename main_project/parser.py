@@ -5,8 +5,8 @@ Parser for grammar defined in ../grammars/smpl_grammar.txt
 
 from .tokenizer import Tokenizer
 from .token_types import Token_Type
-from .intermediate_representation import IR, IR_One_Operand, IR_Two_Operand
-from .cfg import Control_Flow_Graph, Basic_Block as bb
+from .intermediate_representation import IR_OP as opc
+from .ssa import SSA_Engine
 
 class Parser:
     
@@ -17,10 +17,8 @@ class Parser:
         self.tokenizer = Tokenizer(input_string)
         self.symbol_table = {}
         self.uninitialized_variables = {}
-        self.results = []
         self.warnings = []
-        self.cfg = Control_Flow_Graph()
-        self.root_block = self.cfg.get_root()
+        self.__ssa = SSA_Engine()
 
     def parse(self):
     # entry point for this parser
@@ -31,7 +29,6 @@ class Parser:
         self.__consume_sequence_statements()
         self.__consume(Token_Type.End)
         self.__consume(Token_Type.Period)
-        return self.results
 
     def __syntax_error(self, error):
     # throws exception
@@ -91,7 +88,7 @@ class Parser:
     # handles predefined function call
         while self.tokenizer.token and self.tokenizer.token.type == Token_Type.Fn_OutputNum:
             self.__consume(self.tokenizer.token.type)
-            self.results.append(self.__expression())
+            self.__ssa.create_instruction(opc.write, self.__expression())
             self.__consume(Token_Type.CloseParanthesis)
         
     def __handle_assignment(self):
@@ -104,8 +101,7 @@ class Parser:
                 self.__consume(Token_Type.Call)
                 self.__consume(Token_Type.Fn_InputNum)
                 self.__consume(Token_Type.CloseParanthesis)
-                # remove this and add code to create read instruction
-                self.__insert_identifier(id, 100)
+                self.__insert_identifier(id, self.__ssa.create_instruction(opc.read))
             else:
                 self.__insert_identifier(id, self.__expression())
             self.uninitialized_variables[id] = False
@@ -123,51 +119,42 @@ class Parser:
 
     def __expression(self):
     # calculate expression
-        val = self.__term()
+        instruction = self.__term()
+
         while self.tokenizer.token and self.tokenizer.token.type in [Token_Type.Plus, Token_Type.Minus]:
             token_type = self.tokenizer.token.type
             self.__consume(token_type)
-            val = self.__perform_operation(token_type, val, self.__term())
-        return val
+            opcode = opc.add if token_type == Token_Type.Plus else opc.sub
+            instruction = self.__ssa.create_instruction(opcode, instruction, self.__term())
+        return instruction
 
     def __term(self):
     # calculate term
-        val = self.__factor()
+        instruction = self.__factor()
         while self.tokenizer.token and self.tokenizer.token.type in [Token_Type.Mul, Token_Type.Div]:
             token_type = self.tokenizer.token.type
             self.__consume(token_type)
-            val = self.__perform_operation(token_type, val, self.__factor())
-        return val
+            opcode = opc.div if token_type == Token_Type.Div else opc.mul
+            instruction = self.__ssa.create_instruction(opcode, instruction, self.__factor())
+        return instruction
 
     def __factor(self):
     # calculates factor
-        val = 0
+        instruction = None
         if self.tokenizer.token:
             if self.tokenizer.token.type == Token_Type.OpenParanthesis:
                 self.__consume(Token_Type.OpenParanthesis)
-                val = self.__expression()
+                instruction = self.__expression()
                 if self.tokenizer.token and self.tokenizer.token.type == Token_Type.CloseParanthesis:
                     self.__consume(Token_Type.CloseParanthesis)
                 else:
                     self.__syntax_error("Expected ) but not found")
             elif self.tokenizer.token.type == Token_Type.Number:
-                val = self.tokenizer.token.val
+                instruction = self.__ssa.create_instruction(opc.const, self.tokenizer.token.val)
                 self.__consume(Token_Type.Number)
             elif self.tokenizer.token.type == Token_Type.Identifier:
-                val = self.__look_up(self.tokenizer.token.id)
+                instruction = self.__look_up(self.tokenizer.token.id)
                 self.__consume(Token_Type.Identifier)
         else:
             self.__syntax_error("Syntax error in factor")
-        return val
-
-    def __perform_operation(self, token_type, first_operand, second_operand):
-    # performs arithmatic operation based on token_type
-        match token_type:
-            case Token_Type.Plus:
-                return first_operand + second_operand
-            case Token_Type.Minus:
-                return first_operand - second_operand
-            case Token_Type.Mul:
-                return first_operand * second_operand
-            case Token_Type.Div:
-                return first_operand / second_operand
+        return instruction
