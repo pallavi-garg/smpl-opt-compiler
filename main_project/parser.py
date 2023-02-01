@@ -11,11 +11,18 @@ from .ssa import SSA_Engine
 class Parser:
     
     statement_starter = [Token_Type.Let, Token_Type.If, Token_Type.While, Token_Type.Return, Token_Type.Call]
+    relational_operators = {
+                            Token_Type.Equals : opc.beq,
+                            Token_Type.NotEquals : opc.bne,
+                            Token_Type.LessThan : opc.blt,
+                            Token_Type.LessThanEqualTo : opc.ble,
+                            Token_Type.GreaterThan : opc.bgt,
+                            Token_Type.GreaterThanEqualTo : opc.bge
+                            }
 
     def __init__(self, input_string):
     # constructor initialization
         self.tokenizer = Tokenizer(input_string)
-        self.symbol_table = {}
         self.uninitialized_variables = {}
         self.warnings = []
         self.__ssa = SSA_Engine()
@@ -29,6 +36,7 @@ class Parser:
         self.__consume_sequence_statements()
         self.__consume(Token_Type.End)
         self.__consume(Token_Type.Period)
+        return self.__ssa.get_cfg()
 
     def __syntax_error(self, error):
     # throws exception
@@ -36,15 +44,15 @@ class Parser:
 
     def __look_up(self, id):
     # returns value of variable with id
-        if(id not in self.symbol_table):
+        if(self.__ssa.is_identifier_defined(id) == False):
            self.__syntax_error("Undefined identifier - '" + id + "'")
         if(self.uninitialized_variables[id]):
             self.warnings.append(f"Warning at line:{self.tokenizer.line_number} -> Using uninitialized variable")
-        return self.symbol_table[id]
+        return self.__ssa.get_identifier_val(id)
     
     def __insert_identifier(self, id, value = 0):
     # inserts identifier in symbol table
-        self.symbol_table[id] = value
+        self.__ssa.set_identifier_val(id, value)
     
     def __consume(self, tokenType):
     # tokenType - Token_Type
@@ -77,6 +85,12 @@ class Parser:
                     self.__handle_assignment()
                 case Token_Type.Call:
                     self.__handle_function_call()
+                case Token_Type.If:
+                    self.__handle_if_statement()
+                case Token_Type.While:
+                    self.__handle_while_statement()
+                case Token_Type.Return:
+                    self.__handle_return_statement()
                 case _:
                     self.__syntax_error("Undefined statement")
             if self.tokenizer.token and self.tokenizer.token.type == Token_Type.SemiColon:
@@ -86,9 +100,13 @@ class Parser:
 
     def __handle_function_call(self):
     # handles predefined function call
-        while self.tokenizer.token and self.tokenizer.token.type == Token_Type.Fn_OutputNum:
+        while self.tokenizer.token and self.tokenizer.token.type in [Token_Type.Fn_OutputNum, Token_Type.Fn_OutputNewLine]:
+            fn_type = self.tokenizer.token.type
             self.__consume(self.tokenizer.token.type)
-            self.__ssa.create_instruction(opc.write, self.__expression())
+            if fn_type in [Token_Type.Fn_OutputNum]:
+                self.__ssa.create_instruction(opc.write, self.__expression())
+            else:
+                self.__ssa.create_instruction(opc.writeNL)
             self.__consume(Token_Type.CloseParanthesis)
         
     def __handle_assignment(self):
@@ -158,3 +176,27 @@ class Parser:
         else:
             self.__syntax_error("Syntax error in factor")
         return instruction
+
+    def __handle_if_statement(self):
+        self.__handle_relation()
+        self.__consume(Token_Type.Then)
+        self.__consume_sequence_statements()
+        if self.tokenizer.token and self.tokenizer.token.type == Token_Type.Else:
+            self.__consume(Token_Type.Else)
+            self.__consume_sequence_statements()
+        self.__consume(Token_Type.Fi)
+
+    def __handle_relation(self):
+        op1 = self.__expression()
+        opcode = self.tokenizer.token
+        if opcode.type not in self.relational_operators:
+            self.__syntax_error("Expected a relational operator.")
+        self.__consume(opcode.type)
+        op2 = self.__expression()
+        return self.__ssa.create_instruction(self.relational_operators[opcode.type], op1, op2)
+    
+    def __handle_while_statement(self):
+        pass
+
+    def __handle_return_statement(self):
+        pass

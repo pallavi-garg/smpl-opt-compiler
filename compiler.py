@@ -17,8 +17,11 @@ def compile():
     try:
         reader = File_Reader(args.file_path)
         p = Parser(reader.get_contents())
-        p.parse()
+        control_flow_graph = p.parse()
         print_warnings(p)
+        #dot_graph = dot.create_graph(control_flow_graph)
+        #print(dot_graph)
+    
     except Exception as ex:
         print_warnings(p)
         print(ex)

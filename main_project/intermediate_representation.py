@@ -2,7 +2,7 @@ import numbers
 
 class IR:
 # Intermediate Representation
-    __next_ir_number = 0
+    __next_ir_number = 1
 
     @staticmethod
     def get_next_ir_number():

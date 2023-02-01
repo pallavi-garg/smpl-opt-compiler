@@ -8,6 +8,7 @@ class SSA_Engine:
         self.__cfg = Control_Flow_Graph()
         self.__root_block = self.__cfg.get_root()
         self.__current_block = self.__root_block
+        self.symbol_table = {}
 
     def __initialize_ds(self):
     # initialized search data structure with None references to supported opcodes
@@ -17,6 +18,28 @@ class SSA_Engine:
         self.__search_data_structure[opc.mul] = None
         self.__search_data_structure[opc.div] = None
         self.__search_data_structure[opc.const] = None
+        self.__search_data_structure[opc.beq] = None
+        self.__search_data_structure[opc.bne] = None
+        self.__search_data_structure[opc.blt] = None
+        self.__search_data_structure[opc.ble] = None
+        self.__search_data_structure[opc.bge] = None
+        self.__search_data_structure[opc.bgt] = None
+    
+    def get_cfg(self):
+    # returns cfg
+        return self.__cfg
+    
+    def is_identifier_defined(self, id):
+    # returns true if id is present in symbol table
+        return id in self.symbol_table
+
+    def get_identifier_val(self, id):
+    # returns value of id from symbol table
+        return self.symbol_table[id]
+
+    def set_identifier_val(self, id, value):
+    # inserts value of id in symbol table
+        self.symbol_table[id] = value
 
     def get_instruction(self, opcode, operand1 = None, operand2 = None): #, ir_num = 0):
     # check in hierarchy of search data structure

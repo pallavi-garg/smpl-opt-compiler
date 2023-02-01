@@ -29,10 +29,13 @@ class Token_Type:
     Fi = 'fi'
     Else = 'else'
     While = 'while'
+    Do = 'do'
+    Od = 'od'
     Return = 'return'
     Call = 'call'
     Fn_OutputNum = 'OutputNum('
     Fn_InputNum = 'InputNum('
+    Fn_OutputNewLine = 'OutputNewLine('
 
 
     def __init__(self):
