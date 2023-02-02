@@ -13,10 +13,11 @@ def compile():
     arg_parser = argparse.ArgumentParser(description="Compiles code of smpl language.")
     arg_parser.add_argument("file_path", help="Path of the file to compile.")
     args = arg_parser.parse_args()
-    
+
+    reader = File_Reader(args.file_path)
+    p = Parser(reader.get_contents())
+
     try:
-        reader = File_Reader(args.file_path)
-        p = Parser(reader.get_contents())
         control_flow_graph = p.parse()
         print_warnings(p)
         #dot_graph = dot.create_graph(control_flow_graph)

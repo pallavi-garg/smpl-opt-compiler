@@ -1,3 +1,5 @@
+import copy
+
 class Control_Flow_Graph:
 # Represents abstract syntax tree generated with nodes represented by Basic_Block
     
@@ -30,12 +32,21 @@ class Basic_Block:
 
     def __init__(self, dominant_block = None):
         self.__name = f'BB{Basic_Block.get_next_ir_number()}'
-        self.dominant_block = dominant_block
-        self.branch_block = None
         self.fall_through_block = None
+        self.branch_block = None
+        self.join_block = None
         self.instructions = []
         self.use_chain = {}
-        self.symbold_table = {}
+        self.symbol_table = {}
+        self.set_dominator_block(dominant_block)
+
+    def set_dominator_block(self, dominant_block):
+        self.dominant_block = dominant_block
+        if dominant_block is not None:
+            self.symbol_table = copy.deepcopy(self.dominant_block.symbol_table)
+
+    def get_dominator_block(self):
+        return self.dominant_block 
     
     def __str__(self):
         return f"{self.__name}"

@@ -122,6 +122,7 @@ class Parser:
                 self.__insert_identifier(id, self.__ssa.create_instruction(opc.read))
             else:
                 self.__insert_identifier(id, self.__expression())
+                self.__ssa.added_assignment(id)
             self.uninitialized_variables[id] = False
         else:
             self.__syntax_error("Expected identifier assignment")
@@ -178,22 +179,26 @@ class Parser:
         return instruction
 
     def __handle_if_statement(self):
-        self.__handle_relation()
+        instruction, opcode = self.__handle_relation(Token_Type.If)
+        self.__ssa.create_branch(instruction, self.relational_operators[opcode])
         self.__consume(Token_Type.Then)
+        self.__ssa.processing_fall_through()
         self.__consume_sequence_statements()
         if self.tokenizer.token and self.tokenizer.token.type == Token_Type.Else:
             self.__consume(Token_Type.Else)
+            self.__ssa.processing_branch()
             self.__consume_sequence_statements()
         self.__consume(Token_Type.Fi)
+        self.__ssa.commit_join()
 
-    def __handle_relation(self):
+    def __handle_relation(self, token_type):
         op1 = self.__expression()
         opcode = self.tokenizer.token
         if opcode.type not in self.relational_operators:
             self.__syntax_error("Expected a relational operator.")
         self.__consume(opcode.type)
         op2 = self.__expression()
-        return self.__ssa.create_instruction(self.relational_operators[opcode.type], op1, op2)
+        return self.__ssa.create_instruction(opc.cmp, op1, op2), opcode.type
     
     def __handle_while_statement(self):
         pass
