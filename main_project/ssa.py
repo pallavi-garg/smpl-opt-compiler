@@ -64,9 +64,15 @@ class SSA_Engine:
     # sets current working block to fall through block
         self.__stack.append(self.__current_block)
         self.__current_block = self.__current_block.fall_through_block
+
+    def end_block(self):
+    # adds branch instruction if current block is a fall through block. This is done to prevent branch block instructions
+        if self.__current_block.dominant_block is not None and self.__current_block == self.__current_block.dominant_block.fall_through_block:
+            self.__current_block.instructions.append(self.create_instruction(opc.bra, self.__current_block.join_block))
         
     def processing_branch(self):
     # sets current working block to branch block
+        if self.__current_block == self.__current_block.dominant_block.fall_through_block:
             main_block = self.__stack.pop()
             self.__stack.append(main_block)
             self.__current_block = main_block.branch_block
@@ -80,7 +86,7 @@ class SSA_Engine:
     # creates new instruction or returns previous common sub expression
         prev_common_expression = None
         prev = None
-        if opcode not in [opc.read, opc.write, opc.writeNL]:
+        if opcode not in [opc.read, opc.write, opc.writeNL, opc.bra]:
             prev_common_expression = self.get_instruction(opcode, operand1, operand2)
             prev = self.__search_data_structure[opcode]
         
