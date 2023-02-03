@@ -12,6 +12,7 @@ class SSA_Engine:
         self.__current_block.set_dominator_block(self.__root_block)
         self.__root_block.fall_through_block = self.__current_block
         self.__stack = []
+        self.create_instruction(opc.const, 0)
 
     def __initialize_ds(self):
     # initialized search data structure with None references to supported opcodes
@@ -69,7 +70,7 @@ class SSA_Engine:
     def end_block(self):
     # adds branch instruction if current block is a fall through block. This is done to prevent branch block instructions
         if self.__current_block.dominant_block is not None and self.__current_block == self.__current_block.dominant_block.fall_through_block:
-            self.__current_block.instructions.append(self.create_instruction(opc.bra, self.__current_block.join_block))
+            self.create_instruction(opc.bra, self.__current_block.join_block)
         
     def processing_branch(self):
     # sets current working block to branch block
@@ -98,7 +99,6 @@ class SSA_Engine:
                 self.__search_data_structure[opcode].prev_search_ds = prev
         
         instruction = prev_common_expression if prev_common_expression is not None else self.__search_data_structure[opcode]
-        self.__current_block.instructions.append(instruction)
 
         return instruction
 
@@ -113,17 +113,18 @@ class SSA_Engine:
             if self.__current_block.dominant_block.fall_through_block == self.__current_block:
                 if previous_phi is None:
                     phi = IR_Two_Operand(opc.phi, self.get_identifier_val(id), self.__current_block.dominant_block.symbol_table[id])
+                    self.__current_block.join_block.instructions.append(phi)
                 else:
                     previous_phi.operand1 = self.get_identifier_val(id)
                     phi = previous_phi
             else:
                 if previous_phi is None:
                     phi = IR_Two_Operand(opc.phi, self.__current_block.dominant_block.symbol_table[id], self.get_identifier_val(id))
+                    self.__current_block.join_block.instructions.append(phi)
                 else:
                     previous_phi.operand2 = self.get_identifier_val(id)
                     phi = previous_phi
 
-            print(phi)
             self.__current_block.join_block.symbol_table[id] = (phi)
 
     def __split_block_after_instruction(self):
