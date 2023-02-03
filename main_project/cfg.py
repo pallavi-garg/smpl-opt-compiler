@@ -6,18 +6,22 @@ class Control_Flow_Graph:
     def __init__(self):
     # constructor for control flow graph
         self.__root = Basic_Block()
-        self.blocks = []
-        self.blocks.append(self.__root)
+        self.__blocks = []
+        self.__blocks.append(self.__root)
 
     def get_new_block(self):
     # create and returns a new block
         new_block = Basic_Block()
-        self.blocks.append(new_block)
+        self.__blocks.append(new_block)
         return new_block
 
     def get_root(self):
     # returns root block
         return self.__root
+
+    def get_blocks(self):
+    # returns root block
+        return self.__blocks
 
 class Basic_Block:
 # Class to represent basic block.

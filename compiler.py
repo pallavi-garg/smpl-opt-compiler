@@ -2,6 +2,7 @@ import sys
 from main_project.parser import Parser
 from main_project.file_reader import File_Reader
 import argparse
+from main_project.dot_graph import Dot_Graph as dot
 
 def print_warnings(parser):
     if parser.warnings:
@@ -20,14 +21,14 @@ def compile():
     try:
         control_flow_graph = p.parse()
         print_warnings(p)
-        #dot_graph = dot.create_graph(control_flow_graph)
-        #print(dot_graph)
+        dot_graph = dot()
+        print(dot_graph.get_representation(control_flow_graph))
     
     except Exception as ex:
         print_warnings(p)
         print(ex)
         return -1
-    
+        
     return 0
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ class SSA_Engine:
         self.__root_block = self.__cfg.get_root()
         self.__current_block = self.__cfg.get_new_block()
         self.__current_block.set_dominator_block(self.__root_block)
+        self.__root_block.fall_through_block = self.__current_block
         self.__stack = []
 
     def __initialize_ds(self):
@@ -139,6 +140,9 @@ class SSA_Engine:
         join_block.join_block = None
         join_block.set_dominator_block(self.__current_block)
 
+        self.__current_block.branch_block.fall_through_block = join_block
+        self.__current_block.fall_through_block.fall_through_block = join_block
+
     def __create_IR(self, opcode, operand1, operand2):
         instruction = None
         match opcode:
@@ -185,6 +189,4 @@ class SSA_Engine:
             case _:
                 self.__current_block.instructions.append(instruction)
         
-        print(f"{instruction}")
-            
         return instruction
