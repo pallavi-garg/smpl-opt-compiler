@@ -1,5 +1,5 @@
 main
-var a, b, c, d, e;
+var a, b, c, d, e, f;
 {
 	let a <- call InputNum();
 	let b <- a + 1;
@@ -9,6 +9,8 @@ var a, b, c, d, e;
 
 		if a>0 then
 			let d <- a + 3;
+		else
+			let f <- a + 7;
 		fi;
 
 		let e <- a + 4;
@@ -18,4 +20,5 @@ var a, b, c, d, e;
 	call OutputNum(c);
 	call OutputNum(d);
 	call OutputNum(e);
+	call OutputNum(f);
 }.

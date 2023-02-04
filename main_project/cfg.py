@@ -48,12 +48,12 @@ class Basic_Block:
         return isinstance(other, Basic_Block) and self.__name == other.__name
 
     def set_dominator_block(self, dominant_block):
-        self.dominant_block = dominant_block
+        self.__dominant_block = dominant_block
         if dominant_block is not None:
-            self.symbol_table = copy.deepcopy(self.dominant_block.symbol_table)
+            self.symbol_table = copy.deepcopy(self.__dominant_block.symbol_table)
 
     def get_dominator_block(self):
-        return self.dominant_block 
+        return self.__dominant_block 
     
     def __str__(self):
         return f"{self.__name}"

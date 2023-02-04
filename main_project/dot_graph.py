@@ -35,8 +35,8 @@ class Dot_Graph:
         if node.fall_through_block is not None:
             self.__relations.append(f"{node}:s -> {node.fall_through_block}:n {fallthrough_label};")
         
-        if node.dominant_block is not None and node.dominant_block is not graph.get_root():
-            self.__relations.append(f"{node.dominant_block}:b -> {node}:b [color=blue, style=dotted, label=\"dom\"]")
+        if node.get_dominator_block() is not None and node.get_dominator_block() is not graph.get_root():
+            self.__relations.append(f"{node.get_dominator_block()}:b -> {node}:b [color=blue, style=dotted, label=\"dom\"]")
 
     def __traverse_instructions(self, node):
         instructions = "{"

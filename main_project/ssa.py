@@ -69,13 +69,13 @@ class SSA_Engine:
 
     def end_block(self):
     # adds branch instruction if current block is a fall through block. This is done to prevent branch block instructions
-        if self.__current_block.dominant_block is not None and self.__current_block == self.__current_block.dominant_block.fall_through_block:
+        if self.__current_block.get_dominator_block() is not None and self.__current_block == self.__current_block.get_dominator_block().fall_through_block:
             self.create_instruction(opc.bra, self.__current_block.join_block)
         
     def processing_branch(self):
     # sets current working block to branch block
-        if self.__current_block == self.__current_block.dominant_block.fall_through_block:
-            self.__current_block = self.__current_block.dominant_block.branch_block
+        if self.__current_block == self.__current_block.get_dominator_block().fall_through_block:
+            self.__current_block = self.__current_block.get_dominator_block().branch_block
 
     def commit_join(self):
     # sets current working block to join block
@@ -119,16 +119,16 @@ class SSA_Engine:
             if previous_phi is not None and (isinstance(previous_phi, IR) == False or previous_phi.op_code != opc.phi) :
                 previous_phi = None
             # left block
-            if self.__current_block.dominant_block.fall_through_block == self.__current_block:
+            if self.__current_block.get_dominator_block().fall_through_block == self.__current_block:
                 if previous_phi is None:
-                    phi = IR_Two_Operand(opc.phi, self.get_identifier_val(id), self.__current_block.dominant_block.symbol_table[id])
+                    phi = IR_Two_Operand(opc.phi, self.get_identifier_val(id), self.__current_block.get_dominator_block().symbol_table[id])
                     self.__current_block.join_block.instructions.insert(0,phi)
                 else:
                     previous_phi.operand1 = self.get_identifier_val(id)
                     phi = previous_phi
             else:
                 if previous_phi is None:
-                    phi = IR_Two_Operand(opc.phi, self.__current_block.dominant_block.symbol_table[id], self.get_identifier_val(id))
+                    phi = IR_Two_Operand(opc.phi, self.__current_block.get_dominator_block().symbol_table[id], self.get_identifier_val(id))
                     self.__current_block.join_block.instructions.insert(0,phi)
                 else:
                     previous_phi.operand2 = self.get_identifier_val(id)

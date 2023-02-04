@@ -179,7 +179,7 @@ class Parser:
         return instruction
 
     def __handle_if_statement(self):
-        instruction, opcode = self.__handle_relation(Token_Type.If)
+        instruction, opcode = self.__handle_relation()
         self.__ssa.create_branch(instruction, self.relational_operators[opcode])
         self.__consume(Token_Type.Then)
         self.__ssa.processing_fall_through()
@@ -192,7 +192,7 @@ class Parser:
         self.__consume(Token_Type.Fi)
         self.__ssa.commit_join()
 
-    def __handle_relation(self, token_type):
+    def __handle_relation(self):
         op1 = self.__expression()
         opcode = self.tokenizer.token
         if opcode.type not in self.relational_operators:
