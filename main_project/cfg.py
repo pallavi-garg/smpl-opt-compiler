@@ -44,6 +44,9 @@ class Basic_Block:
         self.symbol_table = {}
         self.set_dominator_block(dominant_block)
 
+    def __eq__(self, other):
+        return isinstance(other, Basic_Block) and self.__name == other.__name
+
     def set_dominator_block(self, dominant_block):
         self.dominant_block = dominant_block
         if dominant_block is not None:

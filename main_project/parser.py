@@ -12,12 +12,12 @@ class Parser:
     
     statement_starter = [Token_Type.Let, Token_Type.If, Token_Type.While, Token_Type.Return, Token_Type.Call]
     relational_operators = {
-                            Token_Type.Equals : opc.beq,
-                            Token_Type.NotEquals : opc.bne,
-                            Token_Type.LessThan : opc.blt,
-                            Token_Type.LessThanEqualTo : opc.ble,
-                            Token_Type.GreaterThan : opc.bgt,
-                            Token_Type.GreaterThanEqualTo : opc.bge
+                            Token_Type.Equals : opc.bne,
+                            Token_Type.NotEquals : opc.beq,
+                            Token_Type.LessThan : opc.bgt,
+                            Token_Type.LessThanEqualTo : opc.bge,
+                            Token_Type.GreaterThan : opc.blt,
+                            Token_Type.GreaterThanEqualTo : opc.ble
                             }
 
     def __init__(self, input_string):

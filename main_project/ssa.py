@@ -11,7 +11,7 @@ class SSA_Engine:
         self.__current_block = self.__cfg.get_new_block()
         self.__current_block.set_dominator_block(self.__root_block)
         self.__root_block.fall_through_block = self.__current_block
-        self.__stack = []
+        self.__stack_join_blocks = []
         self.create_instruction(opc.const, 0)
 
     def __initialize_ds(self):
@@ -64,7 +64,7 @@ class SSA_Engine:
     
     def processing_fall_through(self):
     # sets current working block to fall through block
-        self.__stack.append(self.__current_block)
+        self.__stack_join_blocks.append(self.__current_block.join_block)
         self.__current_block = self.__current_block.fall_through_block
 
     def end_block(self):
@@ -75,14 +75,23 @@ class SSA_Engine:
     def processing_branch(self):
     # sets current working block to branch block
         if self.__current_block == self.__current_block.dominant_block.fall_through_block:
-            main_block = self.__stack.pop()
-            self.__stack.append(main_block)
-            self.__current_block = main_block.branch_block
+            self.__current_block = self.__current_block.dominant_block.branch_block
 
     def commit_join(self):
     # sets current working block to join block
-        self.__stack.pop()
-        self.__current_block = self.__current_block.join_block
+        if self.__stack_join_blocks:
+            current_join_block = self.__current_block.join_block
+            parent_join_block = self.__stack_join_blocks.pop()
+
+            if current_join_block is not None:
+                self.__propagate_phi(current_join_block, parent_join_block)
+                current_join_block.fall_through_block = parent_join_block
+            
+            if parent_join_block is not None:
+                self.__current_block = parent_join_block
+
+    def __propagate_phi(self, from_block, to_block):
+        pass
 
     def create_instruction(self, opcode, operand1 = None, operand2 = None):
     # creates new instruction or returns previous common sub expression
