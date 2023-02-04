@@ -113,14 +113,14 @@ class SSA_Engine:
             if self.__current_block.dominant_block.fall_through_block == self.__current_block:
                 if previous_phi is None:
                     phi = IR_Two_Operand(opc.phi, self.get_identifier_val(id), self.__current_block.dominant_block.symbol_table[id])
-                    self.__current_block.join_block.instructions.append(phi)
+                    self.__current_block.join_block.instructions.insert(0,phi)
                 else:
                     previous_phi.operand1 = self.get_identifier_val(id)
                     phi = previous_phi
             else:
                 if previous_phi is None:
                     phi = IR_Two_Operand(opc.phi, self.__current_block.dominant_block.symbol_table[id], self.get_identifier_val(id))
-                    self.__current_block.join_block.instructions.append(phi)
+                    self.__current_block.join_block.instructions.insert(0,phi)
                 else:
                     previous_phi.operand2 = self.get_identifier_val(id)
                     phi = previous_phi
