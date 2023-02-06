@@ -129,14 +129,8 @@ class SSA_Engine:
                     # By default all phi is added as if from_block is coming from right
                     operand1 = to_block.symbol_table[id]
                     operand2 = instruction
-                    
-                    nested_dom = from_block.get_dominator_block()
-                    dom = from_block.get_dominator_block().get_dominator_block()
-                    while(dom != to_block.get_dominator_block()):
-                        nested_dom = dom
-                        dom = to_block.get_dominator_block()
 
-                    if(nested_dom == dom.fall_through_block):
+                    if self.__is_left_block(to_block.get_dominator_block(), from_block):
                         operand2 = to_block.symbol_table[id]
                         operand1 = instruction
                     
