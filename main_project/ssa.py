@@ -190,7 +190,6 @@ class SSA_Engine:
                     previous_phi.operand1 = self.get_identifier_val(id)
                     phi = previous_phi
             else:
-                print("id = ", id, self.__current_block.get_dominator_block(), self.__current_block)
                 if previous_phi is None:
                     phi = IR_Two_Operand(opc.phi, self.__current_block.get_dominator_block().symbol_table[id], self.get_identifier_val(id))
                     join_block.instructions.insert(0,phi)
