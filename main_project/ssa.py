@@ -13,6 +13,7 @@ class SSA_Engine:
         self.__current_block.set_dominator_block(self.__root_block)
         self.__root_block.fall_through_block = self.__current_block
         self.__nesting_stage = 0
+        #join block of block where nesting started
         self.__next_joining_phi = None
         self.create_instruction(opc.const, 0)
 
@@ -34,6 +35,8 @@ class SSA_Engine:
     
     def get_cfg(self):
     # returns cfg
+        for k,v in self.__current_block.symbol_table.items():
+            print(f"{k}: {v}")
         return self.__cfg
 
     def is_indentifier_uninitialized(self, id):
@@ -123,10 +126,23 @@ class SSA_Engine:
                         if val == instruction:
                             id = key
                             break
-                    # TODO: at this time all phi is added as if from_block is coming from right
-                    # Add code to find direction of from_block
-                    new_phi = IR_Two_Operand(opc.phi, to_block.symbol_table[id], instruction)
+                    # By default all phi is added as if from_block is coming from right
+                    operand1 = to_block.symbol_table[id]
+                    operand2 = instruction
+                    
+                    nested_dom = from_block.get_dominator_block()
+                    dom = from_block.get_dominator_block().get_dominator_block()
+                    while(dom != to_block.get_dominator_block()):
+                        nested_dom = dom
+                        dom = to_block.get_dominator_block()
+
+                    if(nested_dom == dom.fall_through_block):
+                        operand2 = to_block.symbol_table[id]
+                        operand1 = instruction
+                    
+                    new_phi = IR_Two_Operand(opc.phi, operand1, operand2)
                     to_block.instructions.insert(0, new_phi)
+                    to_block.symbol_table[id] = new_phi
 
     def create_instruction(self, opcode, operand1 = None, operand2 = None):
     # creates new instruction or returns previous common sub expression
@@ -148,28 +164,51 @@ class SSA_Engine:
 
     def added_assignment(self, id):
     # adds phi instruction in join block
-        if self.__current_block.join_block != None:
+        join_block = self.__current_block.join_block
+        desired_bom = self.__current_block.get_dominator_block()
+        # case when current block is actually join block of some if else. 
+        # If we don't set this then phis are not added in this when this is the fallthrough of previous nested if statement
+        if join_block is None:
+            join_block = self.__next_joining_phi
+
+        if join_block != None:
+            desired_bom = join_block.get_dominator_block()
             phi = None
-            previous_phi = self.__current_block.join_block.symbol_table[id]
+            previous_phi = join_block.symbol_table[id]
             if previous_phi is not None and (isinstance(previous_phi, IR) == False or previous_phi.op_code != opc.phi) :
                 previous_phi = None
             # left block
-            if self.__current_block.get_dominator_block().fall_through_block == self.__current_block:
+            if self.__is_left_block(desired_bom, self.__current_block) == True:
                 if previous_phi is None:
                     phi = IR_Two_Operand(opc.phi, self.get_identifier_val(id), self.__current_block.get_dominator_block().symbol_table[id])
-                    self.__current_block.join_block.instructions.insert(0,phi)
+                    join_block.instructions.insert(0,phi)
                 else:
                     previous_phi.operand1 = self.get_identifier_val(id)
                     phi = previous_phi
             else:
+                print("id = ", id, self.__current_block.get_dominator_block(), self.__current_block)
                 if previous_phi is None:
                     phi = IR_Two_Operand(opc.phi, self.__current_block.get_dominator_block().symbol_table[id], self.get_identifier_val(id))
-                    self.__current_block.join_block.instructions.insert(0,phi)
+                    join_block.instructions.insert(0,phi)
                 else:
                     previous_phi.operand2 = self.get_identifier_val(id)
                     phi = previous_phi
 
-            self.__current_block.join_block.symbol_table[id] = (phi)
+            join_block.symbol_table[id] = phi
+
+    def __is_left_block(self, desired_dom, block):
+        left_block = False
+
+        curr_dom = block
+        next_dom = block.get_dominator_block()
+        while(next_dom != desired_dom):
+            curr_dom = next_dom
+            next_dom = curr_dom.get_dominator_block()
+
+        if(curr_dom == desired_dom.fall_through_block):
+            left_block = True
+
+        return left_block
 
     def __split_block_after_instruction(self):
     # adds branch, fallthrough and join block
