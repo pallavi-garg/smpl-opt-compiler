@@ -1,4 +1,5 @@
 import numbers
+from .cfg import Basic_Block
 
 class IR:
 # Intermediate Representation
@@ -26,6 +27,8 @@ class IR:
                 return f"(0?)"
             else:
                 return f"({operand.instruction_number})"
+        elif isinstance(operand, Basic_Block) and operand.instructions:
+            return f"{operand}{self.format_operand(operand.instructions[0])}"
         else:
             return f"{operand}"
 
@@ -53,7 +56,7 @@ class IR_Two_Operand(IR):
         self.operand2 = operand2
     
     def __str__(self):
-        return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.operand1)} {self.format_operand(self.operand2)}"
+        return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.operand1)}, {self.format_operand(self.operand2)}"
 
     def __eq__(self, other) -> bool:
         return isinstance(other, IR_Two_Operand) and self.instruction_number == other.instruction_number and self.operand1 == other.operand1 and  self.operand2 == self.operand2
