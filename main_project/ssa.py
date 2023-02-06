@@ -1,6 +1,7 @@
 from .intermediate_representation import IR, IR_One_Operand, IR_Two_Operand, IR_OP as opc
 from .cfg import Control_Flow_Graph, Basic_Block as bb
 from .token_types import Token_Type
+import copy
 
 class SSA_Engine:
     # holds objects required in SSA calculations
@@ -32,6 +33,7 @@ class SSA_Engine:
         self.__search_data_structure[opc.bge] = None
         self.__search_data_structure[opc.bgt] = None
         self.__search_data_structure[opc.cmp] = None
+        self.__dom_search_ds = self.__search_data_structure
     
     def get_cfg(self):
     # returns cfg
@@ -90,11 +92,12 @@ class SSA_Engine:
     def processing_fall_through(self):
     # sets current working block to fall through block
         self.__current_block = self.__current_block.fall_through_block
+        self.__search_data_structure = copy.deepcopy(self.__dom_search_ds)
         self.__nesting_stage += 1
         if self.__next_joining_phi is None:
             self.__next_joining_phi = self.__current_block.join_block
 
-    def end_block(self):
+    def end_fall_through(self):
     # adds branch instruction if current block is a fall through block. This is done to prevent branch block instructions
         if self.__current_block.get_dominator_block() is not None and self.__current_block == self.__current_block.get_dominator_block().fall_through_block:
             self.create_instruction(opc.bra, self.__current_block.join_block)
@@ -103,6 +106,7 @@ class SSA_Engine:
     # sets current working block to branch block
         if self.__current_block == self.__current_block.get_dominator_block().fall_through_block:
             self.__current_block = self.__current_block.get_dominator_block().branch_block
+            self.__search_data_structure = copy.deepcopy(self.__dom_search_ds)
 
     def end_if(self):
         self.__nesting_stage -= 1
@@ -112,9 +116,9 @@ class SSA_Engine:
             self.__current_block = self.__next_joining_phi
             self.__next_joining_phi = None
             self.__propagate_phi(from_phi, self.__current_block)
-            from_phi.instructions.append(IR_One_Operand(opc.bra, self.__current_block))
         else:
             self.__current_block = self.__current_block.join_block
+        self.__search_data_structure = copy.deepcopy(self.__dom_search_ds)
 
     def __propagate_phi(self, from_block, to_block):
     # adds phi instructions from from_block to given to_block
@@ -143,6 +147,9 @@ class SSA_Engine:
                     if use_previous:
                         previously_value.operand1 = operand1
                         previously_value.operand2 = operand2
+                    elif operand1 == operand2 and operand1 == to_block.symbol_table[id]:
+                        #if everything is already same, then no need to add phi
+                        pass
                     else:
                         new_phi = IR_Two_Operand(opc.phi, operand1, operand2)
                         to_block.instructions.insert(0, new_phi)
@@ -183,15 +190,25 @@ class SSA_Engine:
                 previous_phi = None
             # left block
             if self.__is_left_block(desired_bom, self.__current_block) == True:
-                if previous_phi is None:
-                    phi = IR_Two_Operand(opc.phi, self.get_identifier_val(id), self.__current_block.get_dominator_block().symbol_table[id])
+                if previous_phi is None or previous_phi not in join_block.instructions:
+                    op1 = self.get_identifier_val(id)
+                    op2 = self.__current_block.get_dominator_block().symbol_table[id] 
+                    if op1 == op2 and join_block.symbol_table[id] == op1:
+                        # if everything is already same, no need to add new phi
+                        return
+                    phi = IR_Two_Operand(opc.phi, op1, op2)
                     join_block.instructions.insert(0,phi)
                 else:
                     previous_phi.operand1 = self.get_identifier_val(id)
                     phi = previous_phi
             else:
-                if previous_phi is None:
-                    phi = IR_Two_Operand(opc.phi, self.__current_block.get_dominator_block().symbol_table[id], self.get_identifier_val(id))
+                if previous_phi is None or previous_phi not in join_block.instructions:
+                    op1 = self.__current_block.get_dominator_block().symbol_table[id]
+                    op2 = self.get_identifier_val(id)
+                    if op1 == op2 and join_block.symbol_table[id] == op1:
+                        #if everything is already same, no need to add new phi
+                        return
+                    phi = IR_Two_Operand(opc.phi, op1, op2)
                     join_block.instructions.insert(0,phi)
                 else:
                     previous_phi.operand2 = self.get_identifier_val(id)
@@ -273,6 +290,8 @@ class SSA_Engine:
         match opcode:
             case opc.const:
                 self.__root_block.instructions.append(instruction)
+                instruction.prev_search_ds = self.__dom_search_ds[opc.const]
+                self.__dom_search_ds[opc.const] = instruction
             case _:
                 self.__current_block.instructions.append(instruction)
         

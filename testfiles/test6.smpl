@@ -8,7 +8,7 @@ var a, b, x, y;
 	else
 		let x <- a + 1;
 	fi;
-	let x <- a + 1;
+	let x <- x + 1;
 	call OutputNum(x);
 	call OutputNum(a)
 }.
