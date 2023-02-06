@@ -93,8 +93,6 @@ class SSA_Engine:
     def __propagate_phi(self, from_block, to_block):
     # adds phi instructions from from_block to given to_block
         if from_block and to_block:
-            print (from_block)
-            print (to_block)
             for instruction in from_block.instructions:
                 if isinstance(instruction, IR_Two_Operand) and instruction.op_code == opc.phi:
                     id = None
