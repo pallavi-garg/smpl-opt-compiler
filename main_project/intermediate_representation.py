@@ -2,7 +2,7 @@ import numbers
 
 class IR:
 # Intermediate Representation
-    __next_ir_number = 0
+    __next_ir_number = -1
 
     @staticmethod
     def get_next_ir_number():
@@ -22,9 +22,15 @@ class IR:
         if(isinstance(operand, numbers.Number)):
             return f"#{operand}"
         elif(isinstance(operand, IR)):
-            return f"({operand.instruction_number})"
+            if operand.op_code == IR_OP.undefined:
+                return f"(0?)"
+            else:
+                return f"({operand.instruction_number})"
         else:
             return f"{operand}"
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, IR) and self.instruction_number == other.instruction_number
     
 class IR_One_Operand(IR):
 # Intermediate Representation with 1 operand
@@ -34,6 +40,9 @@ class IR_One_Operand(IR):
     
     def __str__(self):
         return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.operand)}"
+    
+    def __eq__(self, other) -> bool:
+        return isinstance(other, IR_One_Operand) and self.instruction_number == other.instruction_number and self.operand == other.operand
 
 
 class IR_Two_Operand(IR):
@@ -45,6 +54,9 @@ class IR_Two_Operand(IR):
     
     def __str__(self):
         return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.operand1)} {self.format_operand(self.operand2)}"
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, IR_Two_Operand) and self.instruction_number == other.instruction_number and self.operand1 == other.operand1 and  self.operand2 == self.operand2
 
 class IR_OP:
     add = 'add' # add x y       -> x+y
@@ -69,3 +81,6 @@ class IR_OP:
     read = 'read' # read        -> for built-in function InputNum()
     write = 'write' # write x   -> for built-in function OutputNum(x)
     writeNL = 'writeNL' # writeNL -> for built-in function OutputNewLine()
+
+    # DUMMY: do not send this to processor
+    undefined = 'undefined' # value = 0, it identifies operands which are uninitialized.

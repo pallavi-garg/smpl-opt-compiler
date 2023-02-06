@@ -6,12 +6,14 @@ class SSA_Engine:
     # holds objects required in SSA calculations
     def __init__(self):
         self.__initialize_ds()    
+        self.uninitialized_instruction = IR_One_Operand(opc.undefined, 0) # 0 is default value of all numbers
         self.__cfg = Control_Flow_Graph()
         self.__root_block = self.__cfg.get_root()
         self.__current_block = self.__cfg.get_new_block()
         self.__current_block.set_dominator_block(self.__root_block)
         self.__root_block.fall_through_block = self.__current_block
-        self.__stack_join_blocks = []
+        self.__nesting_stage = 0
+        self.__next_joining_phi = None
         self.create_instruction(opc.const, 0)
 
     def __initialize_ds(self):
@@ -33,6 +35,26 @@ class SSA_Engine:
     def get_cfg(self):
     # returns cfg
         return self.__cfg
+
+    def is_indentifier_uninitialized(self, id):
+    # returns warnings found by ssa engine
+        un_inititalized = False
+        val = self.__current_block.symbol_table[id]
+        if isinstance(val, IR_Two_Operand) and val.op_code == opc.phi:
+            return self.__is_undefined(val)
+        elif self.uninitialized_instruction == val:
+            un_inititalized = True
+        return un_inititalized
+
+    def __is_undefined(self, operand):
+        if self.uninitialized_instruction == operand:
+            return True
+        elif isinstance(operand, IR_One_Operand):
+            return operand.op_code == opc.undefined
+        elif isinstance(operand, IR_Two_Operand):
+            return self.__is_undefined(operand.operand1) or self.__is_undefined(operand.operand2)
+        else:
+            return False
     
     def is_identifier_defined(self, id):
     # returns true if id is present in symbol table
@@ -64,8 +86,10 @@ class SSA_Engine:
     
     def processing_fall_through(self):
     # sets current working block to fall through block
-        self.__stack_join_blocks.append(self.__current_block.join_block)
         self.__current_block = self.__current_block.fall_through_block
+        self.__nesting_stage += 1
+        if self.__next_joining_phi is None:
+            self.__next_joining_phi = self.__current_block.join_block
 
     def end_block(self):
     # adds branch instruction if current block is a fall through block. This is done to prevent branch block instructions
@@ -77,18 +101,17 @@ class SSA_Engine:
         if self.__current_block == self.__current_block.get_dominator_block().fall_through_block:
             self.__current_block = self.__current_block.get_dominator_block().branch_block
 
-    def commit_join(self):
-    # sets current working block to join block
-        if self.__stack_join_blocks:
-            current_join_block = self.__current_block.join_block
-            parent_join_block = self.__stack_join_blocks.pop()
-
-            if current_join_block is not None:
-                self.__propagate_phi(current_join_block, parent_join_block)
-                current_join_block.fall_through_block = parent_join_block
-            
-            if parent_join_block is not None:
-                self.__current_block = parent_join_block
+    def end_if(self):
+        self.__nesting_stage -= 1
+        if self.__nesting_stage == 0:
+            from_phi = self.__current_block
+            self.__current_block.fall_through_block = self.__next_joining_phi
+            self.__current_block = self.__next_joining_phi
+            self.__next_joining_phi = None
+            self.__propagate_phi(from_phi, self.__current_block)
+            from_phi.instructions.append(IR_One_Operand(opc.bra, self.__current_block))
+        else:
+            self.__current_block = self.__current_block.join_block
 
     def __propagate_phi(self, from_block, to_block):
     # adds phi instructions from from_block to given to_block

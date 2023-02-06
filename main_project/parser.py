@@ -14,16 +14,15 @@ class Parser:
     relational_operators = {
                             Token_Type.Equals : opc.bne,
                             Token_Type.NotEquals : opc.beq,
-                            Token_Type.LessThan : opc.bgt,
-                            Token_Type.LessThanEqualTo : opc.bge,
-                            Token_Type.GreaterThan : opc.blt,
-                            Token_Type.GreaterThanEqualTo : opc.ble
+                            Token_Type.LessThan : opc.bge,
+                            Token_Type.LessThanEqualTo : opc.bgt,
+                            Token_Type.GreaterThan : opc.ble,
+                            Token_Type.GreaterThanEqualTo : opc.blt
                             }
 
     def __init__(self, input_string):
     # constructor initialization
         self.tokenizer = Tokenizer(input_string)
-        self.uninitialized_variables = {}
         self.warnings = []
         self.__ssa = SSA_Engine()
 
@@ -37,7 +36,7 @@ class Parser:
         self.__consume(Token_Type.End)
         self.__consume(Token_Type.Period)
         return self.__ssa.get_cfg()
-
+    
     def __syntax_error(self, error):
     # throws exception
         raise Exception(f"Syntax Error at line:{self.tokenizer.line_number} -> {error}")
@@ -46,12 +45,14 @@ class Parser:
     # returns value of variable with id
         if(self.__ssa.is_identifier_defined(id) == False):
            self.__syntax_error("Undefined identifier - '" + id + "'")
-        if(self.uninitialized_variables[id]):
-            self.warnings.append(f"Warning at line:{self.tokenizer.line_number} -> Using uninitialized variable")
+        if(self.__ssa.is_indentifier_uninitialized(id)):
+            self.warnings.append(f"Warning at line:{self.tokenizer.line_number} -> Using uninitialized variable '{id}'")
         return self.__ssa.get_identifier_val(id)
     
-    def __insert_identifier(self, id, value = 0):
+    def __insert_identifier(self, id, value = None):
     # inserts identifier in symbol table
+        if value is None:
+            value = self.__ssa.uninitialized_instruction
         self.__ssa.set_identifier_val(id, value)
     
     def __consume(self, tokenType):
@@ -123,14 +124,12 @@ class Parser:
             else:
                 self.__insert_identifier(id, self.__expression())
                 self.__ssa.added_assignment(id)
-            self.uninitialized_variables[id] = False
         else:
             self.__syntax_error("Expected identifier assignment")
 
     def __variable_declaration(self):
     # handle variable declaration
         if self.tokenizer.token and self.tokenizer.token.type == Token_Type.Identifier:
-            self.uninitialized_variables[self.tokenizer.token.id] = True
             self.__insert_identifier(self.tokenizer.token.id)
             self.__consume(Token_Type.Identifier)
         else:
@@ -190,7 +189,7 @@ class Parser:
             self.__ssa.processing_branch()
             self.__consume_sequence_statements()
         self.__consume(Token_Type.Fi)
-        self.__ssa.commit_join()
+        self.__ssa.end_if()
 
     def __handle_relation(self):
         op1 = self.__expression()

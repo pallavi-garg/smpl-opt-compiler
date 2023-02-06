@@ -5,9 +5,12 @@ import argparse
 from main_project.dot_graph import Dot_Graph as dot
 
 def print_warnings(parser):
-    if parser.warnings:
-            for warning in parser.warnings:
-                print(warning)
+    warnings = parser.warnings
+    if len(warnings) > 0:
+        print("\n-------Warnings------")
+        for warning in warnings:
+            print(warning)
+        print("---------------------\n")
 
 def compile():
 
