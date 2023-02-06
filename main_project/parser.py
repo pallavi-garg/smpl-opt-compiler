@@ -35,6 +35,7 @@ class Parser:
         self.__consume_sequence_statements()
         self.__consume(Token_Type.End)
         self.__consume(Token_Type.Period)
+        self.__ssa.create_instruction(opc.end)
         return self.__ssa.get_cfg()
     
     def __syntax_error(self, error):

@@ -152,7 +152,7 @@ class SSA_Engine:
     # creates new instruction or returns previous common sub expression
         prev_common_expression = None
         prev = None
-        if opcode not in [opc.read, opc.write, opc.writeNL, opc.bra]:
+        if opcode not in [opc.read, opc.write, opc.writeNL, opc.bra, opc.end]:
             prev_common_expression = self.get_instruction(opcode, operand1, operand2)
             prev = self.__search_data_structure[opcode]
         
