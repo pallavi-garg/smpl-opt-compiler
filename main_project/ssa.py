@@ -126,17 +126,27 @@ class SSA_Engine:
                         if val == instruction:
                             id = key
                             break
+                    # TODO: remove use_previous and previously_value, and create a use_chain to impelement this
+                    use_previous = False
+                    previously_value = to_block.symbol_table[id]
+                    if isinstance(previously_value, IR_Two_Operand) and previously_value.op_code == opc.phi:
+                        use_previous = True
+
                     # By default all phi is added as if from_block is coming from right
-                    operand1 = to_block.symbol_table[id]
+                    operand1 = to_block.symbol_table[id] if use_previous == False else previously_value.operand1
                     operand2 = instruction
 
                     if self.__is_left_block(to_block.get_dominator_block(), from_block):
-                        operand2 = to_block.symbol_table[id]
                         operand1 = instruction
-                    
-                    new_phi = IR_Two_Operand(opc.phi, operand1, operand2)
-                    to_block.instructions.insert(0, new_phi)
-                    to_block.symbol_table[id] = new_phi
+                        operand2 = to_block.symbol_table[id] if use_previous == False else previously_value.operand2
+
+                    if use_previous:
+                        previously_value.operand1 = operand1
+                        previously_value.operand2 = operand2
+                    else:
+                        new_phi = IR_Two_Operand(opc.phi, operand1, operand2)
+                        to_block.instructions.insert(0, new_phi)
+                        to_block.symbol_table[id] = new_phi
 
     def create_instruction(self, opcode, operand1 = None, operand2 = None):
     # creates new instruction or returns previous common sub expression
