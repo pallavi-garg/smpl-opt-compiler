@@ -91,7 +91,21 @@ class SSA_Engine:
                 self.__current_block = parent_join_block
 
     def __propagate_phi(self, from_block, to_block):
-        pass
+    # adds phi instructions from from_block to given to_block
+        if from_block and to_block:
+            print (from_block)
+            print (to_block)
+            for instruction in from_block.instructions:
+                if isinstance(instruction, IR_Two_Operand) and instruction.op_code == opc.phi:
+                    id = None
+                    for key, val in from_block.symbol_table.items():
+                        if val == instruction:
+                            id = key
+                            break
+                    # TODO: at this time all phi is added as if from_block is coming from right
+                    # Add code to find direction of from_block
+                    new_phi = IR_Two_Operand(opc.phi, to_block.symbol_table[id], instruction)
+                    to_block.instructions.insert(0, new_phi)
 
     def create_instruction(self, opcode, operand1 = None, operand2 = None):
     # creates new instruction or returns previous common sub expression
