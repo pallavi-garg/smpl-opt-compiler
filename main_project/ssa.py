@@ -140,11 +140,7 @@ class SSA_Engine:
             if same_join_block == True:
                 self.__current_block = self.__current_block.branch_block
         else:
-            if same_join_block == True:
-                self.__current_block = self.__current_block.branch_block
-                print("self.__current_block", self.__current_block)
-            else:
-                self.__current_block = self.__current_block.join_block
+            self.__current_block = self.__current_block.branch_block if same_join_block == True else self.__current_block.join_block
         self.__search_data_structure = copy.deepcopy(self.__dom_search_ds)
 
     def __propagate_phi(self, from_block, to_block):
@@ -204,19 +200,22 @@ class SSA_Engine:
     # adds phi instruction in join block
         join_block = self.__current_block.join_block
         desired_bom = self.__current_block.get_dominator_block()
+
         # case when current block is actually join block of some if else. 
         # If we don't set this then phis are not added in this when this is the fallthrough of previous nested if statement
         if join_block is None:
             join_block = self.__next_joining_phi
-
+            
         if join_block != None:
-            desired_bom = join_block.get_dominator_block()
+            #incase of while loop these will be same
+            if join_block != desired_bom:
+                desired_bom = join_block.get_dominator_block()
             phi = None
             previous_phi = join_block.symbol_table[id]
             if previous_phi is not None and (isinstance(previous_phi, IR) == False or previous_phi.op_code != opc.phi) :
                 previous_phi = None
             # left block
-            if self.__is_left_block(desired_bom, self.__current_block) == True:
+            if join_block != desired_bom and self.__is_left_block(desired_bom, self.__current_block) == True:
                 if previous_phi is None or previous_phi not in join_block.instructions:
                     op1 = self.get_identifier_val(id)
                     op2 = self.__current_block.get_dominator_block().symbol_table[id] 
