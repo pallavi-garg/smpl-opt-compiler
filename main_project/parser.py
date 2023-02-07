@@ -124,7 +124,6 @@ class Parser:
                 self.__insert_identifier(id, self.__ssa.create_instruction(opc.read))
             else:
                 self.__insert_identifier(id, self.__expression())
-                self.__ssa.added_assignment(id)
         else:
             self.__syntax_error("Expected identifier assignment")
 

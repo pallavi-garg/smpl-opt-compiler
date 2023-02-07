@@ -49,6 +49,7 @@ class SSA_Engine:
         return un_inititalized
 
     def __is_undefined(self, operand, already_looked_instructions):
+    # returns true if operand is undefined variable value
         already_looked_instructions.append(operand)
         if self.uninitialized_instruction == operand:
             return True
@@ -70,8 +71,12 @@ class SSA_Engine:
     def set_identifier_val(self, id, value):
     # inserts value of id in symbol table
         self.__current_block.symbol_table[id] = value
+        if value is IR and value.op_code in [opc.undefined, opc.read]:
+            pass
+        else:
+            self.__added_assignment(id)
 
-    def get_instruction(self, opcode, operand1 = None, operand2 = None): #, ir_num = 0):
+    def __get_instruction(self, opcode, operand1 = None, operand2 = None): #, ir_num = 0):
     # check in hierarchy of search data structure
         prev_common_expression = self.__search_data_structure[opcode]
         while prev_common_expression is not None: # and prev_common_expression.instruction_number >= ir_num:
@@ -187,7 +192,7 @@ class SSA_Engine:
         prev_common_expression = None
         prev = None
         if opcode not in [opc.read, opc.write, opc.writeNL, opc.bra, opc.end]:
-            prev_common_expression = self.get_instruction(opcode, operand1, operand2)
+            prev_common_expression = self.__get_instruction(opcode, operand1, operand2)
             prev = self.__search_data_structure[opcode]
         
         # if not found in search data structure, then create new instruction
@@ -200,7 +205,7 @@ class SSA_Engine:
 
         return instruction
 
-    def added_assignment(self, id, propagate = True):
+    def __added_assignment(self, id, propagate = True):
     # adds phi instruction in join block
         join_block = self.__current_block.join_block
         desired_bom = self.__current_block.get_dominator_block()
@@ -272,63 +277,32 @@ class SSA_Engine:
                             block.use_chain[other_variable].remove(instruction)
                             block.use_chain[other_variable].append(new_ir) 
                             block.symbol_table[other_variable] = new_ir
-                            self.added_assignment(other_variable, False)
+                            self.__added_assignment(other_variable, False)            
 
-            
-
-    def __is_left_block(self, desired_dom, block):
+    def __is_left_block(self, dominator_block, block):
+    # returns true if block is left block of dominator_block
         left_block = False
+        curr_block = block
+        curr_dom = block.get_dominator_block()
+        while(curr_dom != dominator_block):
+            curr_block = curr_dom
+            curr_dom = curr_block.get_dominator_block()
 
-        curr_dom = block
-        next_dom = block.get_dominator_block()
-        while(next_dom != desired_dom):
-            curr_dom = next_dom
-            next_dom = curr_dom.get_dominator_block()
-
-        if(curr_dom == desired_dom.fall_through_block):
+        if(curr_block == dominator_block.fall_through_block):
             left_block = True
-
         return left_block
 
     def __create_IR(self, opcode, operand1, operand2):
         instruction = None
-        match opcode:
-            case opc.add:
-                instruction = IR_Two_Operand(opcode, operand1, operand2)
-            case opc.sub:
-                instruction = IR_Two_Operand(opcode, operand1, operand2)
-            case opc.mul:
-                instruction = IR_Two_Operand(opcode, operand1, operand2)
-            case opc.div:
-                instruction = IR_Two_Operand(opcode, operand1, operand2)
-            case opc.cmp:
-                instruction = IR_Two_Operand(opcode, operand1, operand2)
-            case opc.end:
-                instruction = IR(opcode)
-            case opc.bra:
-                instruction = IR_One_Operand(opcode, operand1)
-            case opc.bne:
-                instruction = IR_Two_Operand(opcode, operand1, operand2)
-            case opc.beq:
-                instruction = IR_Two_Operand(opcode, operand1, operand2)
-            case opc.ble:
-                instruction = IR_Two_Operand(opcode, operand1, operand2)
-            case opc.blt:
-                instruction = IR_Two_Operand(opcode, operand1, operand2)
-            case opc.bge:
-                instruction = IR_Two_Operand(opcode, operand1, operand2)
-            case opc.bgt:
-                instruction = IR_Two_Operand(opcode, operand1, operand2)
-            case opc.const:
-                instruction = IR_One_Operand(opcode, operand1)
-            case opc.read:
-                instruction = IR(opcode)
-            case opc.write:
-                instruction = IR_One_Operand(opcode, operand1)
-            case opc.writeNL:
-                instruction = IR(opcode)
-            case _:
-                raise Exception(f"Unknown command '{opcode}'!")
+        
+        if opcode in [opc.add, opc.sub, opc.mul, opc.div, opc.cmp, opc.bne, opc.beq, opc.ble, opc.blt, opc.bge, opc.bgt]:
+            instruction = IR_Two_Operand(opcode, operand1, operand2)
+        elif opcode in [opc.end, opc.read, opc.writeNL]:
+            instruction = IR(opcode)
+        elif opcode in [opc.bra, opc.const, opc.write]:
+            instruction = IR_One_Operand(opcode, operand1)
+        else:
+            raise Exception(f"Unknown command '{opcode}'!")
 
         match opcode:
             case opc.const:
