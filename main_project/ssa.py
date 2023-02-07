@@ -109,7 +109,6 @@ class SSA_Engine:
         self.__current_block.fall_through_block.join_block = join_block
 
         self.create_instruction(opcode, instruction, self.__current_block.branch_block)
-        print(self.__current_block, self.__current_block.fall_through_block, self.__current_block.branch_block, self.__current_block.fall_through_block.join_block, self.__current_block.branch_block.join_block)
 
     def processing_fall_through(self):
     # sets current working block to fall through block
