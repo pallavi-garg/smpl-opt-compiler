@@ -1,0 +1,14 @@
+main
+var i, k, out;
+{
+    let i <- 0;
+    let k <- 2;
+    let out <- 1;
+    while i < 20 do
+        let out <- out * 2;
+        let i <- i + 1;
+        let k <- 3;
+    od;
+    let out <- out + k;
+    call OutputNum(out);
+}.

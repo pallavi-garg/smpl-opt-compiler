@@ -65,6 +65,8 @@ class Token_Type:
         self.reserved_token_list.append(self.NotEquals)
         self.reserved_token_list.append(self.If)
         self.reserved_token_list.append(self.Fi)
+        self.reserved_token_list.append(self.Do)
+        self.reserved_token_list.append(self.Od)
 
         #three letter size
         self.reserved_token_list.append(self.Var)

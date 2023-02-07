@@ -80,12 +80,37 @@ class SSA_Engine:
                 break;
             prev_common_expression = prev_common_expression.prev_search_ds
         return prev_common_expression
-
-    def create_branch(self, instruction, opcode):
-    # updates current block based on consumed token
-        self.__split_block_after_instruction()
-        self.create_instruction(opcode, instruction, self.__current_block.branch_block)
     
+    def split_block(self):
+        if len(self.__current_block.instructions) > 0:
+            prev = self.__current_block
+            self.__current_block = self.__cfg.get_new_block()
+            self.__current_block.set_dominator_block(prev)
+            prev.fall_through_block = self.__current_block
+
+    def create_control_flow(self, instruction, opcode, use_current_as_join):
+    # updates current block based on use_current_as_join
+        # adds branch, fallthrough and join block
+        self.__current_block.fall_through_block = self.__cfg.get_new_block()
+        self.__current_block.fall_through_block.set_dominator_block(self.__current_block)
+
+        self.__current_block.branch_block = self.__cfg.get_new_block()
+        self.__current_block.branch_block.set_dominator_block(self.__current_block)
+
+        join_block = self.__current_block
+        if use_current_as_join == False:
+            join_block = self.__cfg.get_new_block()
+            self.__current_block.branch_block.join_block = join_block
+            join_block.set_dominator_block(self.__current_block)
+            join_block.join_block = None
+            self.__current_block.branch_block.fall_through_block = join_block
+            self.__current_block.fall_through_block.fall_through_block = join_block
+        
+        self.__current_block.fall_through_block.join_block = join_block
+
+        self.create_instruction(opcode, instruction, self.__current_block.branch_block)
+        print(self.__current_block, self.__current_block.fall_through_block, self.__current_block.branch_block, self.__current_block.fall_through_block.join_block, self.__current_block.branch_block.join_block)
+
     def processing_fall_through(self):
     # sets current working block to fall through block
         self.__current_block = self.__current_block.fall_through_block
@@ -105,7 +130,7 @@ class SSA_Engine:
             self.__current_block = self.__current_block.get_dominator_block().branch_block
             self.__search_data_structure = copy.deepcopy(self.__dom_search_ds)
 
-    def end_if(self):
+    def end_control_flow(self, same_join_block = False):
         self.__nesting_stage -= 1
         if self.__nesting_stage == 0:
             from_phi = self.__current_block
@@ -113,8 +138,14 @@ class SSA_Engine:
             self.__current_block = self.__next_joining_phi
             self.__next_joining_phi = None
             self.__propagate_phi(from_phi, self.__current_block)
+            if same_join_block == True:
+                self.__current_block = self.__current_block.branch_block
         else:
-            self.__current_block = self.__current_block.join_block
+            if same_join_block == True:
+                self.__current_block = self.__current_block.branch_block
+                print("self.__current_block", self.__current_block)
+            else:
+                self.__current_block = self.__current_block.join_block
         self.__search_data_structure = copy.deepcopy(self.__dom_search_ds)
 
     def __propagate_phi(self, from_block, to_block):
@@ -226,23 +257,6 @@ class SSA_Engine:
             left_block = True
 
         return left_block
-
-    def __split_block_after_instruction(self):
-    # adds branch, fallthrough and join block
-        self.__current_block.fall_through_block = self.__cfg.get_new_block()
-        self.__current_block.fall_through_block.set_dominator_block(self.__current_block)
-
-        self.__current_block.branch_block = self.__cfg.get_new_block()
-        self.__current_block.branch_block.set_dominator_block(self.__current_block)
-
-        join_block = self.__cfg.get_new_block()
-        self.__current_block.branch_block.join_block = join_block
-        self.__current_block.fall_through_block.join_block = join_block
-        join_block.join_block = None
-        join_block.set_dominator_block(self.__current_block)
-
-        self.__current_block.branch_block.fall_through_block = join_block
-        self.__current_block.fall_through_block.fall_through_block = join_block
 
     def __create_IR(self, opcode, operand1, operand2):
         instruction = None
