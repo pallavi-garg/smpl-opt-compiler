@@ -54,7 +54,10 @@ class SSA_Engine:
         elif isinstance(operand, IR_One_Operand):
             return operand.op_code == opc.undefined
         elif isinstance(operand, IR_Two_Operand):
-            return self.__is_undefined(operand.operand1) or self.__is_undefined(operand.operand2)
+            if operand.op_code == opc.phi:
+                return operand.operand1 == self.uninitialized_instruction or operand.operand2 == self.uninitialized_instruction
+            else:
+                return self.__is_undefined(operand.operand1) or self.__is_undefined(operand.operand2)
         else:
             return False
     
@@ -130,6 +133,9 @@ class SSA_Engine:
             self.__search_data_structure = copy.deepcopy(self.__dom_search_ds)
 
     def end_control_flow(self, same_join_block = False):
+        if same_join_block:
+            #while loop ended, so set the symbol table for branch same as fall through block
+            self.__current_block.get_dominator_block().branch_block.symbol_table = self.__current_block.get_dominator_block().symbol_table
         self.__nesting_stage -= 1
         if self.__nesting_stage == 0:
             from_phi = self.__current_block
@@ -196,7 +202,7 @@ class SSA_Engine:
 
         return instruction
 
-    def added_assignment(self, id):
+    def added_assignment(self, id, propagate = True):
     # adds phi instruction in join block
         join_block = self.__current_block.join_block
         desired_bom = self.__current_block.get_dominator_block()
@@ -239,8 +245,40 @@ class SSA_Engine:
                 else:
                     previous_phi.operand2 = self.get_identifier_val(id)
                     phi = previous_phi
-
+            prev_val = join_block.symbol_table[id]
             join_block.symbol_table[id] = phi
+            if propagate == True and prev_val != phi:
+                self.__update(id, prev_val, phi, join_block)
+                self.__update(id, prev_val, phi, self.__current_block)
+
+    def __update(self, id, prev_val_of_variable, new_value_of_variable, block):
+        if id in block.use_chain:
+            for instruction in block.use_chain[id]:
+                modified1 = False
+                modified2 = False
+                print(instruction.instruction_number , new_value_of_variable.instruction_number)
+                if instruction.instruction_number < new_value_of_variable.instruction_number:
+                    if isinstance(instruction, IR_One_Operand) and instruction.operand == prev_val_of_variable:
+                        instruction.operand = new_value_of_variable
+                    elif isinstance(instruction, IR_Two_Operand):
+                        if instruction.operand1 == prev_val_of_variable:
+                            instruction.operand1 = new_value_of_variable
+                            modified1 = True
+                        if instruction.operand2 == prev_val_of_variable:
+                            instruction.operand2 = new_value_of_variable
+                            modified2 = True
+                if modified2 == True or modified1 == True:
+                    for other_variable in block.use_chain:
+                        if other_variable != id and isinstance(instruction, IR_Two_Operand) and instruction in block.use_chain[other_variable]:
+                            new_ir = IR_Two_Operand(instruction.op_code, instruction.operand1 if modified1 == False else prev_val_of_variable, instruction.operand2 if modified2 == False else prev_val_of_variable)
+                            block.instructions.append(new_ir)
+                            block.use_chain[other_variable].remove(instruction)
+                            block.use_chain[other_variable].append(new_ir) 
+                            print(id, other_variable, new_ir, block)
+                            block.symbol_table[other_variable] = new_ir
+                            self.added_assignment(other_variable, False)
+
+            
 
     def __is_left_block(self, desired_dom, block):
         left_block = False
@@ -294,7 +332,7 @@ class SSA_Engine:
             case opc.writeNL:
                 instruction = IR(opcode)
             case _:
-                raise Exception("Unknown command!")
+                raise Exception(f"Unknown command '{opcode}'!")
 
         match opcode:
             case opc.const:
@@ -303,5 +341,14 @@ class SSA_Engine:
                 self.__dom_search_ds[opc.const] = instruction
             case _:
                 self.__current_block.instructions.append(instruction)
-        
+                self.__update_use_chain(operand1, operand2, instruction, self.__current_block)
+
         return instruction
+
+    def __update_use_chain(self, operand1, operand2, instruction, block):
+        for id in block.symbol_table:
+            if block.symbol_table[id] == operand1 or block.symbol_table[id] == operand2:
+                if id not in block.use_chain:
+                    block.use_chain[id] = []
+                block.use_chain[id].append(instruction)
+        
