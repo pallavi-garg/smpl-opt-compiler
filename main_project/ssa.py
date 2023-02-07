@@ -43,21 +43,19 @@ class SSA_Engine:
         un_inititalized = False
         val = self.__current_block.symbol_table[id]
         if isinstance(val, IR_Two_Operand) and val.op_code == opc.phi:
-            return self.__is_undefined(val)
+            return self.__is_undefined(val, [])
         elif self.uninitialized_instruction == val:
             un_inititalized = True
         return un_inititalized
 
-    def __is_undefined(self, operand):
+    def __is_undefined(self, operand, already_looked_instructions):
+        already_looked_instructions.append(operand)
         if self.uninitialized_instruction == operand:
             return True
         elif isinstance(operand, IR_One_Operand):
             return operand.op_code == opc.undefined
-        elif isinstance(operand, IR_Two_Operand):
-            if operand.op_code == opc.phi:
-                return operand.operand1 == self.uninitialized_instruction or operand.operand2 == self.uninitialized_instruction
-            else:
-                return self.__is_undefined(operand.operand1) or self.__is_undefined(operand.operand2)
+        elif operand not in already_looked_instructions and isinstance(operand, IR_Two_Operand):
+            return self.__is_undefined(operand.operand1, already_looked_instructions) or self.__is_undefined(operand.operand2, already_looked_instructions)
         else:
             return False
     
@@ -256,7 +254,6 @@ class SSA_Engine:
             for instruction in block.use_chain[id]:
                 modified1 = False
                 modified2 = False
-                print(instruction.instruction_number , new_value_of_variable.instruction_number)
                 if instruction.instruction_number < new_value_of_variable.instruction_number:
                     if isinstance(instruction, IR_One_Operand) and instruction.operand == prev_val_of_variable:
                         instruction.operand = new_value_of_variable
@@ -274,7 +271,6 @@ class SSA_Engine:
                             block.instructions.append(new_ir)
                             block.use_chain[other_variable].remove(instruction)
                             block.use_chain[other_variable].append(new_ir) 
-                            print(id, other_variable, new_ir, block)
                             block.symbol_table[other_variable] = new_ir
                             self.added_assignment(other_variable, False)
 
