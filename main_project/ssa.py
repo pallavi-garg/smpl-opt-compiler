@@ -1,6 +1,5 @@
 from .intermediate_representation import IR, IR_One_Operand, IR_Two_Operand, IR_OP as opc
 from .cfg import Control_Flow_Graph, Basic_Block as bb
-from .token_types import Token_Type
 import copy
 
 class SSA_Engine:
@@ -37,8 +36,6 @@ class SSA_Engine:
     
     def get_cfg(self):
     # returns cfg
-        for k,v in self.__current_block.symbol_table.items():
-            print(f"{k}: {v}")
         return self.__cfg
 
     def is_indentifier_uninitialized(self, id):
