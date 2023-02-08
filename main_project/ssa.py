@@ -15,7 +15,6 @@ class SSA_Engine:
         self.__nesting_stage = 0
         #join block of block where nesting started
         self.__next_joining_phi = None
-        self.create_instruction(opc.const, 0)
 
     def __initialize_ds(self):
     # initialized search data structure with None references to supported opcodes
@@ -269,34 +268,44 @@ class SSA_Engine:
 
             prev_val = join_block.symbol_table[id]
             join_block.symbol_table[id] = phi
-            if propagate == True and prev_val != phi:
-                self.__update(id, prev_val, phi, join_block)
-                self.__update(id, prev_val, phi, self.__current_block)
+            
+            if join_block == dominating_block and prev_val != phi:
+                self.__update_instructions_using_variable(id, prev_val, phi, join_block)
 
-    def __update(self, id, prev_val_of_variable, new_value_of_variable, block):
-        if id in block.use_chain:
-            for instruction in block.use_chain[id]:
-                modified1 = False
-                modified2 = False
-                if instruction.instruction_number < new_value_of_variable.instruction_number:
-                    if isinstance(instruction, IR_One_Operand) and instruction.operand == prev_val_of_variable:
-                        instruction.operand = new_value_of_variable
-                    elif isinstance(instruction, IR_Two_Operand):
-                        if instruction.operand1 == prev_val_of_variable:
-                            instruction.operand1 = new_value_of_variable
-                            modified1 = True
-                        if instruction.operand2 == prev_val_of_variable:
-                            instruction.operand2 = new_value_of_variable
-                            modified2 = True
-                if modified2 == True or modified1 == True:
-                    for other_variable in block.use_chain:
-                        if other_variable != id and isinstance(instruction, IR_Two_Operand) and instruction in block.use_chain[other_variable]:
-                            new_ir = IR_Two_Operand(instruction.op_code, instruction.operand1 if modified1 == False else prev_val_of_variable, instruction.operand2 if modified2 == False else prev_val_of_variable)
-                            block.instructions.append(new_ir)
-                            block.use_chain[other_variable].remove(instruction)
-                            block.use_chain[other_variable].append(new_ir) 
-                            block.symbol_table[other_variable] = new_ir
-                            self.__added_assignment(other_variable, False)            
+    def __update_instructions_using_variable(self, variable_id, old_val, new_val, block1):        
+        all_instructions = block1.instructions + self.__current_block.instructions
+        for instruction in all_instructions:
+            modified = False
+            op1 = None
+            op2 = None
+            if instruction.instruction_number < new_val.instruction_number:
+                if isinstance(instruction, IR_One_Operand) and instruction.operand == old_val:
+                    op1 = instruction.operand
+                    instruction.operand = new_val
+                    modified = True
+                elif isinstance(instruction, IR_Two_Operand):
+                    # if instruction is phi, then left parameter is not updated as it came from dominating block of join block and not the fall through
+                    if instruction.operand1 == old_val and instruction.op_code != opc.phi:
+                        op1 = instruction.operand1
+                        op2 = instruction.operand2
+                        instruction.operand1 = new_val
+                        modified = True
+                    elif instruction.operand2 == old_val:
+                        op1 = instruction.operand1
+                        op2 = instruction.operand2
+                        instruction.operand2 = new_val
+                        modified = True
+                if modified == True:
+                    for id in self.__current_block.symbol_table:
+                        if id != variable_id and self.__current_block.symbol_table[id].instruction_number == instruction.instruction_number:
+                            if isinstance(instruction, IR_One_Operand):
+                                replaced_instr = IR_One_Operand(instruction.op_code, op1)
+                                self.__current_block.instructions.append(replaced_instr)
+                                self.set_identifier_val(id, replaced_instr)
+                            elif isinstance(instruction, IR_Two_Operand):
+                                replaced_instr = IR_Two_Operand(instruction.op_code, op1, op2)
+                                self.__current_block.instructions.append(replaced_instr)
+                                self.set_identifier_val(id, replaced_instr)           
 
     def __create_IR(self, opcode, operand1, operand2):
         instruction = None
@@ -317,15 +326,6 @@ class SSA_Engine:
                 self.__dom_search_ds[opc.const] = instruction
             case _:
                 self.__current_block.instructions.append(instruction)
-                self.__update_use_chain(operand1, operand2, instruction, self.__current_block)
 
         return instruction
-
-    def __update_use_chain(self, operand1, operand2, instruction, block):
-    # variable_id : [used_in_instruction1, used_in_instruction2,...]
-        for id in block.symbol_table:
-            if block.symbol_table[id] == operand1 or block.symbol_table[id] == operand2:
-                if id not in block.use_chain:
-                    block.use_chain[id] = []
-                block.use_chain[id].append(instruction)
         
