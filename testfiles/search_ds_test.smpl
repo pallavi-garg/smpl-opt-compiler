@@ -2,11 +2,11 @@ main
 var a, b, x, y;
 {
 	let a <- call InputNum();
-	let x <-10;
+	let x <- a + 1;
 	if a<0 then
-		let x <- a + 1;
+		let x <- a + 2;
 	else
-		let x <- a + 1;
+		let x <- a + 3;
 	fi;
 	let x <- a + 1;
 	call OutputNum(x);
