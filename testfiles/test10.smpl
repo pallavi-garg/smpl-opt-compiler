@@ -1,0 +1,26 @@
+main
+var i, x;
+{
+    let i <- call InputNum();
+    let x <- 0;
+	call OutputNum(i);
+	call OutputNum(x);
+
+    while i < 10 do
+        let x <- i + 1;
+	  call OutputNum(i);
+	  call OutputNum(x);
+        if x<5 then
+        call OutputNum(i);
+	  	call OutputNum(x);
+            let x <- i;
+		call OutputNum(i);
+	  	call OutputNum(x);
+        fi;
+        let i <- i + 1;
+        call OutputNum(i);
+        call OutputNum(x);
+    od;
+    call OutputNum(i);
+    call OutputNum(x);
+}.
