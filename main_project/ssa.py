@@ -85,6 +85,7 @@ class SSA_Engine:
     def create_control_flow(self, instruction, opcode, use_current_as_join):
     # updates current block based on use_current_as_join
         # adds branch, fallthrough and join block
+        self.__dom_search_ds = copy.deepcopy(self.__search_data_structure)
         self.__current_block.fall_through_block = self.__cfg.get_new_block()
         self.__current_block.fall_through_block.set_dominator_block(self.__current_block)
 
@@ -131,6 +132,7 @@ class SSA_Engine:
             self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
 
     def end_control_flow(self, same_join_block = False):
+        self.__search_data_structure = self.__dom_search_ds
         if same_join_block:
             #while loop ended, so set the symbol table for branch same as fall through block
             self.__current_block.get_dominator_block().branch_block.symbol_table = self.__current_block.get_dominator_block().symbol_table
@@ -147,8 +149,6 @@ class SSA_Engine:
                 self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
         else:
             self.__current_block = self.__current_block.branch_block if same_join_block == True else self.__current_block.join_block
-            
-        self.__search_data_structure = self.__dom_search_ds
 
     def __propagate_phi(self, from_block, to_block):
     # adds phi instructions from from_block to given to_block
