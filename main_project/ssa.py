@@ -158,7 +158,7 @@ class SSA_Engine:
         self.__control_flow_main_blocks.pop()
         top_search_ds = self.__search_ds.pop()
         self.__search_data_structure = top_search_ds
-        
+
         if same_join_block:
             #while loop ended, so set the symbol table for branch same as fall through block
             self.__current_block.get_dominator_block().branch_block.symbol_table = self.__current_block.get_dominator_block().symbol_table
@@ -179,7 +179,7 @@ class SSA_Engine:
 
     def __propagate_phi(self, from_block, to_block):
     # adds phi instructions from from_block to given to_block
-        if from_block and to_block:
+        if from_block != None and to_block != None and from_block != to_block:
             for instruction in from_block.instructions:
                 if isinstance(instruction, IR_Two_Operand) and instruction.op_code == opc.phi:
                     id = None
