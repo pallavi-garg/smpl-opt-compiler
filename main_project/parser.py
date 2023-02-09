@@ -184,10 +184,11 @@ class Parser:
         self.__ssa.processing_fall_through()
         self.__consume_sequence_statements()
         self.__ssa.end_fall_through()
+        self.__ssa.processing_branch()
         if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Else:
             self.__consume(Token_Type.Else)
-            self.__ssa.processing_branch()
             self.__consume_sequence_statements()
+        self.__ssa.end_branch()
         self.__consume(Token_Type.Fi)
         self.__ssa.end_control_flow()
 

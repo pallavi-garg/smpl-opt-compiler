@@ -15,6 +15,7 @@ class SSA_Engine:
         self.__nesting_stage = 0
         #join block of block where nesting started
         self.__next_joining_phi = None
+        self.__control_flow_main_blocks = []
 
     def __initialize_ds(self):
     # initialized search data structure with None references to supported opcodes
@@ -85,6 +86,7 @@ class SSA_Engine:
     def create_control_flow(self, instruction, opcode, use_current_as_join):
     # updates current block based on use_current_as_join
         # adds branch, fallthrough and join block
+        self.__control_flow_main_blocks.append(self.__current_block)
         self.__dom_search_ds = copy.deepcopy(self.__search_data_structure)
         self.__current_block.fall_through_block = self.__cfg.get_new_block()
         self.__current_block.fall_through_block.set_dominator_block(self.__current_block)
@@ -111,7 +113,6 @@ class SSA_Engine:
     def processing_fall_through(self):
     # sets current working block to fall through block
         self.__current_block = self.__current_block.fall_through_block
-        #print(f"current {self.__current_block}, dom {self.__current_block.get_dominator_block()}")
         
         self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
         self.__search_data_structure = copy.deepcopy(self.__dom_search_ds)
@@ -121,17 +122,33 @@ class SSA_Engine:
 
     def end_fall_through(self):
     # adds branch instruction if current block is a fall through block. This is done to prevent branch block instructions
-        if self.__current_block.get_dominator_block() is not None and self.__current_block == self.__current_block.get_dominator_block().fall_through_block:
-            self.create_instruction(opc.bra, self.__current_block.join_block)
+        join_block = self.__current_block.join_block
+        if join_block is None:
+            main_block = self.__control_flow_main_blocks.pop()
+            self.__control_flow_main_blocks.append(main_block) #append main_block as it has not ended yet
+            join_block = main_block.fall_through_block.join_block
+
+        self.create_instruction(opc.bra, join_block)
         
     def processing_branch(self):
     # sets current working block to branch block
-        if self.__current_block == self.__current_block.get_dominator_block().fall_through_block:
-            self.__current_block = self.__current_block.get_dominator_block().branch_block
-            self.__search_data_structure = copy.deepcopy(self.__dom_search_ds)
-            self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
+        prev_current = self.__current_block
+        main_block = self.__control_flow_main_blocks.pop()
+        self.__control_flow_main_blocks.append(main_block) #append main_block as it has not ended yet
+
+        self.__current_block = main_block.branch_block
+
+        if prev_current != self.__current_block.get_dominator_block().fall_through_block:
+            prev_current.fall_through_block = self.__current_block.join_block
+
+        self.__search_data_structure = copy.deepcopy(self.__dom_search_ds)
+        self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
+    
+    def end_branch(self):
+        self.__current_block = self.__current_block.join_block
 
     def end_control_flow(self, same_join_block = False):
+        self.__control_flow_main_blocks.pop()
         self.__search_data_structure = self.__dom_search_ds
         if same_join_block:
             #while loop ended, so set the symbol table for branch same as fall through block
@@ -140,15 +157,16 @@ class SSA_Engine:
         self.__nesting_stage -= 1
         if self.__nesting_stage == 0:
             from_phi = self.__current_block
-            self.__current_block.fall_through_block = self.__next_joining_phi
+            if self.__current_block != self.__next_joining_phi:
+                self.__current_block.fall_through_block = self.__next_joining_phi
             self.__current_block = self.__next_joining_phi
             self.__next_joining_phi = None
             self.__propagate_phi(from_phi, self.__current_block)
             if same_join_block == True:
                 self.__current_block = self.__current_block.branch_block
                 self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
-        else:
-            self.__current_block = self.__current_block.branch_block if same_join_block == True else self.__current_block.join_block
+        elif same_join_block == True:
+            self.__current_block = self.__current_block.branch_block
 
     def __propagate_phi(self, from_block, to_block):
     # adds phi instructions from from_block to given to_block
@@ -160,6 +178,8 @@ class SSA_Engine:
                         if val == instruction:
                             id = key
                             break
+                    if id is None:
+                        continue
                     use_existing_toblock_phi = False
                     existing_phi = to_block.symbol_table[id]
                     if existing_phi is not None and isinstance(existing_phi, IR_Two_Operand) and existing_phi.op_code == opc.phi:
@@ -169,7 +189,7 @@ class SSA_Engine:
                     operand1 = to_block.symbol_table[id] if use_existing_toblock_phi == False else existing_phi.operand1
                     operand2 = instruction
 
-                    if self.__is_left_block(to_block.get_dominator_block(), from_block):
+                    if self.__is_join_and_start_of_while(to_block) == False and self.__is_left_block(to_block.get_dominator_block(), from_block):
                         operand1 = instruction
                         operand2 = to_block.symbol_table[id] if use_existing_toblock_phi == False else existing_phi.operand2
 
@@ -236,6 +256,9 @@ class SSA_Engine:
             dom = dom.get_dominator_block()
         return False
 
+    def __is_join_and_start_of_while(self, block):
+        return block.fall_through_block is not None and block.fall_through_block.join_block == block
+
     def __is_left_block(self, dominator_block, block):
     # returns true if block is left block of dominator_block
         left_block = False
@@ -296,13 +319,14 @@ class SSA_Engine:
 
     def __get_all_instructions_under_block_rec(self, block, except_block, instructions):
         instructions = instructions + block.instructions
-        for_join = block.fall_through_block
+        for_join = None
         if block.fall_through_block is not None and except_block != block.fall_through_block:
             instructions = self.__get_all_instructions_under_block_rec(block.fall_through_block, except_block, instructions)
+            for_join = block.fall_through_block.join_block
         if block.branch_block is not None and except_block != block.fall_through_block:
             instructions = instructions + block.branch_block.instructions
-            for_join = block.branch_block
-        if for_join is not None and for_join != block.fall_through_block:
+            for_join = block.branch_block.join_block
+        if for_join is not None and for_join != except_block:
             instructions = instructions + for_join.instructions
         return instructions
 
@@ -319,7 +343,7 @@ class SSA_Engine:
                     modified = True
                 elif isinstance(instruction, IR_Two_Operand):
                     # if instruction is phi, then left parameter is not updated as it came from dominating block of join block and not the fall through
-                    if instruction.operand1 == old_val and instruction.op_code != opc.phi:
+                    if instruction.operand1 == old_val and (instruction.op_code != opc.phi or instruction in self.__current_block.instructions):
                         op1 = instruction.operand1
                         op2 = instruction.operand2
                         instruction.operand1 = new_val
