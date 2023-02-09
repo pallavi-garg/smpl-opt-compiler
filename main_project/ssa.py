@@ -16,6 +16,8 @@ class SSA_Engine:
         #join block of block where nesting started
         self.__next_joining_phi = None
         self.__control_flow_main_blocks = []
+        self.__search_ds = []
+        self.__last_const_instruction = None
 
     def __initialize_ds(self):
     # initialized search data structure with None references to supported opcodes
@@ -24,7 +26,6 @@ class SSA_Engine:
         self.__search_data_structure[opc.sub] = None
         self.__search_data_structure[opc.mul] = None
         self.__search_data_structure[opc.div] = None
-        self.__search_data_structure[opc.const] = None
         self.__search_data_structure[opc.beq] = None
         self.__search_data_structure[opc.bne] = None
         self.__search_data_structure[opc.blt] = None
@@ -32,7 +33,6 @@ class SSA_Engine:
         self.__search_data_structure[opc.bge] = None
         self.__search_data_structure[opc.bgt] = None
         self.__search_data_structure[opc.cmp] = None
-        self.__dom_search_ds = self.__search_data_structure
     
     def get_cfg(self):
     # returns cfg
@@ -82,12 +82,13 @@ class SSA_Engine:
             self.__current_block = self.__cfg.get_new_block()
             self.__current_block.set_dominator_block(prev)
             prev.fall_through_block = self.__current_block
+            self.__search_ds.append(copy.deepcopy(self.__search_data_structure))
 
     def create_control_flow(self, instruction, opcode, use_current_as_join):
     # updates current block based on use_current_as_join
         # adds branch, fallthrough and join block
         self.__control_flow_main_blocks.append(self.__current_block)
-        self.__dom_search_ds = copy.deepcopy(self.__search_data_structure)
+        
         self.__current_block.fall_through_block = self.__cfg.get_new_block()
         self.__current_block.fall_through_block.set_dominator_block(self.__current_block)
 
@@ -105,6 +106,8 @@ class SSA_Engine:
         
         self.__current_block.fall_through_block.join_block = join_block
         self.create_instruction(opcode, instruction, self.__current_block.branch_block)
+        self.__search_ds.append(copy.deepcopy(self.__search_data_structure))
+
 
     def print_symbol_table(self, block):
         for id in block.symbol_table:
@@ -115,7 +118,9 @@ class SSA_Engine:
         self.__current_block = self.__current_block.fall_through_block
         
         self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
-        self.__search_data_structure = copy.deepcopy(self.__dom_search_ds)
+        top_search_ds = self.__search_ds.pop()
+        self.__search_ds.append(top_search_ds)
+        self.__search_data_structure = copy.deepcopy(top_search_ds)
         self.__nesting_stage += 1
         if self.__next_joining_phi is None:
             self.__next_joining_phi = self.__current_block.join_block
@@ -140,16 +145,20 @@ class SSA_Engine:
 
         if prev_current != self.__current_block.get_dominator_block().fall_through_block:
             prev_current.fall_through_block = self.__current_block.join_block
-
-        self.__search_data_structure = copy.deepcopy(self.__dom_search_ds)
         self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
+
+        top_search_ds = self.__search_ds.pop()
+        self.__search_ds.append(top_search_ds)
+        self.__search_data_structure = copy.deepcopy(top_search_ds)
     
     def end_branch(self):
         self.__current_block = self.__current_block.join_block
 
     def end_control_flow(self, same_join_block = False):
         self.__control_flow_main_blocks.pop()
-        self.__search_data_structure = self.__dom_search_ds
+        top_search_ds = self.__search_ds.pop()
+        self.__search_data_structure = top_search_ds
+        
         if same_join_block:
             #while loop ended, so set the symbol table for branch same as fall through block
             self.__current_block.get_dominator_block().branch_block.symbol_table = self.__current_block.get_dominator_block().symbol_table
@@ -206,13 +215,20 @@ class SSA_Engine:
 
     def __get_instruction(self, opcode, operand1 = None, operand2 = None):
     # check in hierarchy of search data structure
-        prev_common_expression = self.__search_data_structure[opcode]
-        while prev_common_expression is not None:
-            if isinstance(prev_common_expression, IR_Two_Operand) and prev_common_expression.operand1 == operand1 and prev_common_expression.operand2 == operand2:
-                break
-            elif isinstance(prev_common_expression, IR_One_Operand) and prev_common_expression.operand == operand1:
-                break
-            prev_common_expression = prev_common_expression.prev_search_ds
+        if opcode == opc.const:
+            prev_common_expression = self.__last_const_instruction
+            while prev_common_expression is not None:
+                if prev_common_expression.operand == operand1:
+                    break
+                prev_common_expression = prev_common_expression.prev_search_ds
+        else:
+            prev_common_expression = self.__search_data_structure[opcode]
+            while prev_common_expression is not None:
+                if isinstance(prev_common_expression, IR_Two_Operand) and prev_common_expression.operand1 == operand1 and prev_common_expression.operand2 == operand2:
+                    break
+                elif isinstance(prev_common_expression, IR_One_Operand) and prev_common_expression.operand == operand1:
+                    break
+                prev_common_expression = prev_common_expression.prev_search_ds
         return prev_common_expression
 
     def create_instruction(self, opcode, operand1 = None, operand2 = None):
@@ -221,7 +237,7 @@ class SSA_Engine:
         prev = None
         if opcode not in [opc.read, opc.write, opc.writeNL, opc.bra, opc.end]:
             prev_common_expression = self.__get_instruction(opcode, operand1, operand2)
-            prev = self.__search_data_structure[opcode]
+            prev = self.__last_const_instruction if opcode == opc.const else self.__search_data_structure[opcode]
         
         # if not found in search data structure, then create new instruction
         if prev_common_expression is None:
@@ -380,8 +396,8 @@ class SSA_Engine:
         match opcode:
             case opc.const:
                 self.__root_block.instructions.append(instruction)
-                instruction.prev_search_ds = self.__dom_search_ds[opc.const]
-                self.__dom_search_ds[opc.const] = instruction
+                instruction.prev_search_ds = self.__last_const_instruction
+                self.__last_const_instruction = instruction
             case _:
                 self.__current_block.instructions.append(instruction)
 
