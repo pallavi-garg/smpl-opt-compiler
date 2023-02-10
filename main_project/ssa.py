@@ -18,8 +18,6 @@ class SSA_Engine:
         self.__control_flow_main_blocks = []
         self.__search_ds = []
         self.__last_const_instruction = None
-        self.__last_fall_end = None
-        self.__last_branch_end = None
 
     def __initialize_ds(self):
     # initialized search data structure with None references to supported opcodes
@@ -74,11 +72,6 @@ class SSA_Engine:
     def set_identifier_val(self, id, value):
     # inserts value of id in symbol table
         self.__current_block.symbol_table[id] = value
-        if value is IR and value.op_code in [opc.undefined, opc.read]:
-            pass
-        else:
-            pass
-            #self.__added_assignment(id)
     
     def split_block(self):
         if len(self.__current_block.instructions) > 0:
@@ -134,7 +127,6 @@ class SSA_Engine:
             join_block = main_block.fall_through_block.join_block
 
         self.create_instruction(opc.bra, join_block)
-        self.__last_fall_end = self.__current_block
         
     def processing_branch(self):
     # sets current working block to branch block
@@ -153,7 +145,6 @@ class SSA_Engine:
         self.__search_data_structure = copy.deepcopy(top_search_ds)
     
     def end_branch(self):
-        self.__last_branch_end = self.__current_block
         join_block = self.__current_block.join_block
 
         if join_block is None:
@@ -177,13 +168,16 @@ class SSA_Engine:
         self.__propagate_phi(left_block, right_block, join_block)
 
     def __propagate_phi(self, left_block, right_block, join_block):
+        modified_variables = {}
         for id in join_block.symbol_table:
             existing_val = join_block.symbol_table[id]
             if existing_val is None or existing_val.op_code != opc.phi:
                 if left_block.symbol_table[id] != right_block.symbol_table[id]:
                     phi = IR_Two_Operand(opc.phi, left_block.symbol_table[id], right_block.symbol_table[id])
                     join_block.instructions.insert(0, phi)
+                    old_val = join_block.symbol_table[id]
                     join_block.symbol_table[id] = phi
+                    modified_variables[old_val.instruction_number] = join_block.symbol_table[id]
                 else:
                     join_block.symbol_table[id] = left_block.symbol_table[id]
             elif existing_val.op_code == opc.phi:
@@ -191,6 +185,34 @@ class SSA_Engine:
                 if join_block != left_block:
                     existing_val.operand1 = left_block.symbol_table[id]
                 existing_val.operand2 = right_block.symbol_table[id]
+        return modified_variables
+
+    def end_loop_control_flow(self, left, right, join_block):
+        self.__control_flow_main_blocks.pop()
+        top_search_ds = self.__search_ds.pop()
+        self.__search_data_structure = top_search_ds
+
+        left.fall_through_block = join_block
+
+        modified_variables = self.__propagate_phi(join_block, left, join_block)
+        self.__move_new_values_down(left, join_block, modified_variables)
+        self.__current_block = right
+        #TODO: self.__current_block.symbol_table = join_block.symbol_table
+
+    def __move_new_values_down(self, loop_body, join_block, modified_variables):
+        all_instructions = join_block.instructions + loop_body.instructions
+        for instruction in all_instructions:
+            if isinstance(instruction, IR_One_Operand) and isinstance(instruction.operand, IR) and instruction.operand.instruction_number in modified_variables:
+                if instruction.instruction_number < modified_variables[instruction.operand.instruction_number].instruction_number:
+                    instruction.operand = modified_variables[instruction.operand.instruction_number]
+            elif isinstance(instruction, IR_Two_Operand):
+                if instruction.operand1 and isinstance(instruction.operand1, IR) and instruction.operand1.instruction_number in modified_variables:
+                    if instruction.instruction_number < modified_variables[instruction.operand1.instruction_number].instruction_number:
+                        instruction.operand1 = modified_variables[instruction.operand1.instruction_number]
+                if instruction.operand2 and isinstance(instruction.operand2, IR) and instruction.operand2.instruction_number in modified_variables:
+                    if instruction.instruction_number < modified_variables[instruction.operand2.instruction_number].instruction_number:
+                        instruction.operand2 = modified_variables[instruction.operand2.instruction_number]
+            #TODO: Add new instruction when instruction is updated but was also used for some other variable
 
     def __get_instruction(self, opcode, operand1 = None, operand2 = None):
     # check in hierarchy of search data structure
@@ -227,135 +249,6 @@ class SSA_Engine:
         instruction = prev_common_expression if prev_common_expression is not None else self.__search_data_structure[opcode]
 
         return instruction
-    
-    def __get_blocks_for_adding_phi(self):
-        join_block = self.__current_block.join_block
-        dominating_block = self.__current_block.get_dominator_block()
-
-        # case when current block is actually join block of some if else. 
-        # If we don't set this then phis are not added in this when this is the fallthrough of previous nested if statement
-        if join_block is None:
-            join_block = self.__next_joining_phi
-        
-        # join_block != dominating_block is true in case of if else blocks
-        if join_block is not None and join_block != dominating_block and self.__is_under_while(join_block, dominating_block) == False:
-            dominating_block = join_block.get_dominator_block()
-
-        return join_block, dominating_block
-
-    def __is_under_while(self, join_block, dominating_block):
-        dom = dominating_block
-        while dom is not None:
-            if dom == join_block:
-                return True
-            dom = dom.get_dominator_block()
-        return False
-
-    def __is_left_block(self, dominator_block, block):
-    # returns true if block is left block of dominator_block
-        left_block = False
-        curr_block = block
-        curr_dom = block.get_dominator_block()
-        while(curr_dom != dominator_block):
-            curr_block = curr_dom
-            curr_dom = curr_block.get_dominator_block()
-
-        if(curr_block == dominator_block.fall_through_block and curr_block.join_block != dominator_block):
-            left_block = True
-        return left_block
-
-    def __added_assignment(self, id):
-    # adds phi instruction in join block
-        join_block, dominating_block = self.__get_blocks_for_adding_phi()
-            
-        if join_block != None:
-            phi = None
-            previous_phi = join_block.symbol_table[id]
-            if previous_phi is not None and (isinstance(previous_phi, IR) == False or previous_phi.op_code != opc.phi) :
-                previous_phi = None
-            # left block
-            if join_block != dominating_block and self.__is_left_block(dominating_block, self.__current_block) == True:
-                if previous_phi is None or previous_phi not in join_block.instructions:
-                    op1 = self.get_identifier_val(id)
-                    op2 = self.__current_block.get_dominator_block().symbol_table[id] 
-                    if op1 == op2 and join_block.symbol_table[id] == op1:
-                        # if everything is already same, no need to add new phi
-                        return
-                    phi = IR_Two_Operand(opc.phi, op1, op2)
-                    join_block.instructions.insert(0,phi)
-                else:
-                    previous_phi.operand1 = self.get_identifier_val(id)
-                    phi = previous_phi
-            # right block
-            else:
-                if previous_phi is None or previous_phi not in join_block.instructions:
-                    op1 = self.__current_block.get_dominator_block().symbol_table[id]
-                    op2 = self.get_identifier_val(id)
-                    if op1 == op2 and join_block.symbol_table[id] == op1:
-                        #if everything is already same, no need to add new phi
-                        return
-                    phi = IR_Two_Operand(opc.phi, op1, op2)
-                    join_block.instructions.insert(0,phi)
-                else:
-                    previous_phi.operand2 = self.get_identifier_val(id)
-                    phi = previous_phi
-
-            prev_val = join_block.symbol_table[id]
-            join_block.symbol_table[id] = phi
-            if self.__is_under_while(join_block, dominating_block) and prev_val != phi:
-                self.__update_instructions_using_variable(id, prev_val, phi, join_block)
-
-    def __get_all_instructions_under_block(self, block, except_block):
-        instructions = self.__get_all_instructions_under_block_rec(block, except_block, [])
-        return instructions
-
-    def __get_all_instructions_under_block_rec(self, block, except_block, instructions):
-        instructions = instructions + block.instructions
-        for_join = None
-        if block.fall_through_block is not None and except_block != block.fall_through_block:
-            instructions = self.__get_all_instructions_under_block_rec(block.fall_through_block, except_block, instructions)
-            for_join = block.fall_through_block.join_block
-        if block.branch_block is not None and except_block != block.fall_through_block:
-            instructions = instructions + block.branch_block.instructions
-            for_join = block.branch_block.join_block
-        if for_join is not None and for_join != except_block:
-            instructions = instructions + for_join.instructions
-        return instructions
-
-    def __update_instructions_using_variable(self, variable_id, old_val, new_val, block): 
-        all_instructions = self.__get_all_instructions_under_block(block, self.__current_block) + self.__current_block.instructions
-        for instruction in all_instructions:
-            modified = False
-            op1 = None
-            op2 = None
-            if instruction.instruction_number < new_val.instruction_number:
-                if isinstance(instruction, IR_One_Operand) and instruction.operand == old_val:
-                    op1 = instruction.operand
-                    instruction.operand = new_val
-                    modified = True
-                elif isinstance(instruction, IR_Two_Operand):
-                    # if instruction is phi, then left parameter is not updated as it came from dominating block of join block and not the fall through
-                    if instruction.operand1 == old_val and (instruction.op_code != opc.phi or instruction in self.__current_block.instructions):
-                        op1 = instruction.operand1
-                        op2 = instruction.operand2
-                        instruction.operand1 = new_val
-                        modified = True
-                    elif instruction.operand2 == old_val:
-                        op1 = instruction.operand1
-                        op2 = instruction.operand2
-                        instruction.operand2 = new_val
-                        modified = True
-                if modified == True:
-                    for id in self.__current_block.symbol_table:
-                        if id != variable_id and self.__current_block.symbol_table[id].instruction_number == instruction.instruction_number:
-                            if isinstance(instruction, IR_One_Operand):
-                                replaced_instr = IR_One_Operand(instruction.op_code, op1)
-                                self.__current_block.instructions.append(replaced_instr)
-                                self.set_identifier_val(id, replaced_instr)
-                            elif isinstance(instruction, IR_Two_Operand):
-                                replaced_instr = IR_Two_Operand(instruction.op_code, op1, op2)
-                                self.__current_block.instructions.append(replaced_instr)
-                                self.set_identifier_val(id, replaced_instr)           
 
     def __create_IR(self, opcode, operand1, operand2):
         instruction = None

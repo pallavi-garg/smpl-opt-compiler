@@ -202,15 +202,18 @@ class Parser:
         return self.__ssa.create_instruction(opc.cmp, op1, op2), opcode.type
     
     def __handle_while_statement(self):
+        pass
+        '''
         self.__ssa.split_block()
         instruction, opcode = self.__handle_relation()
-        self.__ssa.create_control_flow(instruction, self.relational_operators[opcode], True)
+        left_block, right_block, join_block = self.__ssa.create_control_flow(instruction, self.relational_operators[opcode], True)
         self.__consume(Token_Type.Do)
         self.__ssa.processing_fall_through()
         self.__consume_sequence_statements()
         self.__ssa.end_fall_through()
         self.__consume(Token_Type.Od)
-        #self.__ssa.end_control_flow(True)
+        self.__ssa.end_loop_control_flow(left_block, right_block, join_block)
+        '''
 
     def __handle_return_statement(self):
         pass
