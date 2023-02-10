@@ -1,0 +1,50 @@
+main
+var i,a,b,c,d;
+{
+    let i <- call InputNum(); 
+    call OutputNum(i);
+    if i < 10 then
+        let a <- 10;
+        let b <- 20;
+        call OutputNum(a);
+        call OutputNum(b);
+        call OutputNum(c);
+        call OutputNum(d);
+        if a < 15 then
+            let c <- a + b;
+            call OutputNum(a);
+            call OutputNum(b);
+            call OutputNum(c);
+            call OutputNum(d);
+            if a > 10 then
+                let c <- a * b;
+                call OutputNum(a);
+                call OutputNum(b);
+                call OutputNum(c);
+                call OutputNum(d);
+            else
+                let c <- a / b;
+                call OutputNum(a);
+                call OutputNum(b);
+                call OutputNum(c);
+                call OutputNum(d);
+            fi;
+            call OutputNum(a);
+            call OutputNum(b);
+            call OutputNum(c);
+            call OutputNum(d);
+        else
+            let d <- a-d;
+        fi;
+        call OutputNum(a);
+        call OutputNum(b);
+        call OutputNum(c);
+        call OutputNum(d);
+    fi;
+	
+	    call OutputNum(a);
+        call OutputNum(b);
+        call OutputNum(c);
+        call OutputNum(d);
+        call OutputNum(i);
+}.

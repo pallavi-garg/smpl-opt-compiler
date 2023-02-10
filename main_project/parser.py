@@ -179,7 +179,7 @@ class Parser:
 
     def __handle_if_statement(self):
         instruction, opcode = self.__handle_relation()
-        self.__ssa.create_control_flow(instruction, self.relational_operators[opcode], False)
+        left_block, right_block, join_block = self.__ssa.create_control_flow(instruction, self.relational_operators[opcode], False)
         self.__consume(Token_Type.Then)
         self.__ssa.processing_fall_through()
         self.__consume_sequence_statements()
@@ -190,8 +190,8 @@ class Parser:
             self.__consume_sequence_statements()
         self.__ssa.end_branch()
         self.__consume(Token_Type.Fi)
-        self.__ssa.end_control_flow()
-
+        self.__ssa.end_control_flow(left_block, right_block, join_block)
+                
     def __handle_relation(self):
         op1 = self.__expression()
         opcode = self.__tokenizer.token
@@ -210,7 +210,7 @@ class Parser:
         self.__consume_sequence_statements()
         self.__ssa.end_fall_through()
         self.__consume(Token_Type.Od)
-        self.__ssa.end_control_flow(True)
+        #self.__ssa.end_control_flow(True)
 
     def __handle_return_statement(self):
         pass

@@ -52,13 +52,14 @@ class SSA_Engine:
 
     def __is_undefined(self, operand, already_looked_instructions):
     # returns true if operand is undefined variable value
-        already_looked_instructions.append(operand)
         if self.uninitialized_instruction == operand:
             return True
         elif isinstance(operand, IR_One_Operand):
             return operand.op_code == opc.undefined
         elif operand not in already_looked_instructions and isinstance(operand, IR_Two_Operand):
-            return self.__is_undefined(operand.operand1, already_looked_instructions) or self.__is_undefined(operand.operand2, already_looked_instructions)
+            val = self.__is_undefined(operand.operand1, already_looked_instructions) or self.__is_undefined(operand.operand2, already_looked_instructions)
+            already_looked_instructions.append(operand)
+            return val
         else:
             return False
     
@@ -76,7 +77,8 @@ class SSA_Engine:
         if value is IR and value.op_code in [opc.undefined, opc.read]:
             pass
         else:
-            self.__added_assignment(id)
+            pass
+            #self.__added_assignment(id)
     
     def split_block(self):
         if len(self.__current_block.instructions) > 0:
@@ -109,11 +111,7 @@ class SSA_Engine:
         self.__current_block.fall_through_block.join_block = join_block
         self.create_instruction(opcode, instruction, self.__current_block.branch_block)
         self.__search_ds.append(copy.deepcopy(self.__search_data_structure))
-
-
-    def print_symbol_table(self, block):
-        for id in block.symbol_table:
-            print(f"{id} - {block.symbol_table[id]}")
+        return self.__current_block.fall_through_block, self.__current_block.branch_block, join_block
 
     def processing_fall_through(self):
     # sets current working block to fall through block
@@ -156,43 +154,42 @@ class SSA_Engine:
     
     def end_branch(self):
         self.__last_branch_end = self.__current_block
-        self.__current_block = self.__current_block.join_block
+        join_block = self.__current_block.join_block
 
-    def end_control_flow(self, same_join_block = False):
+        if join_block is None:
+            main_block = self.__control_flow_main_blocks.pop()
+            self.__control_flow_main_blocks.append(main_block) #append main_block as it has not ended yet
+            join_block = main_block.fall_through_block.join_block
+            self.__current_block.fall_through_block = join_block
+        self.__current_block = join_block
+
+    def end_control_flow(self, left, right, join_block):
         self.__control_flow_main_blocks.pop()
         top_search_ds = self.__search_ds.pop()
         self.__search_data_structure = top_search_ds
 
-        if same_join_block:
-            #while loop ended, so set the symbol table for branch same as fall through block
-            self.__current_block.get_dominator_block().branch_block.symbol_table = self.__current_block.get_dominator_block().symbol_table
+        left_block = left
+        right_block = right
+        while(left_block.fall_through_block != join_block):
+            left_block = left_block.fall_through_block
+        while(right_block.fall_through_block != join_block):
+            right_block = right_block.fall_through_block
+        self.__propagate_phi(left_block, right_block, join_block)
 
-        self.__nesting_stage -= 1
-        if self.__nesting_stage == 0:
-            from_phi = self.__current_block
-            if self.__current_block != self.__next_joining_phi:
-                self.__current_block.fall_through_block = self.__next_joining_phi
-            self.__current_block = self.__next_joining_phi
-            self.__next_joining_phi = None
-            self.__propagate_phi_new(self.__last_fall_end, self.__last_branch_end)
-            if same_join_block == True:
-                self.__current_block = self.__current_block.branch_block
-                self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
-        elif same_join_block == True:
-            self.__current_block = self.__current_block.branch_block
-
-    def __propagate_phi_new(self, left_block, right_block):
-        for id in self.__current_block.symbol_table:
-            existing_val = self.__current_block.symbol_table[id]
+    def __propagate_phi(self, left_block, right_block, join_block):
+        for id in join_block.symbol_table:
+            existing_val = join_block.symbol_table[id]
             if existing_val is None or existing_val.op_code != opc.phi:
                 if left_block.symbol_table[id] != right_block.symbol_table[id]:
                     phi = IR_Two_Operand(opc.phi, left_block.symbol_table[id], right_block.symbol_table[id])
-                    self.__current_block.instructions.insert(0, phi)
-                    self.__current_block.symbol_table[id] = phi
+                    join_block.instructions.insert(0, phi)
+                    join_block.symbol_table[id] = phi
                 else:
-                    self.__current_block.symbol_table[id] = left_block.symbol_table[id]
+                    join_block.symbol_table[id] = left_block.symbol_table[id]
             elif existing_val.op_code == opc.phi:
-                existing_val.operand1 = left_block.symbol_table[id]
+                #in case of loop, left block is the main while header block
+                if join_block != left_block:
+                    existing_val.operand1 = left_block.symbol_table[id]
                 existing_val.operand2 = right_block.symbol_table[id]
 
     def __get_instruction(self, opcode, operand1 = None, operand2 = None):

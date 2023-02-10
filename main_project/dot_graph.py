@@ -31,15 +31,13 @@ class Dot_Graph:
         if node.branch_block is not None:
             self.__relations.append(f"{node} -> {node.branch_block} [label=\"branch\"];")
             fallthrough_label = f"[label=\"fall-through\"]"
+            
+        if node.get_dominator_block() is not None:
+            self.__relations.append(f"{node.get_dominator_block()} -> {node} [color=blue, fontcolor=blue, style=dotted, label=\"dom\"]")
         
         if node.fall_through_block is not None:
-            if node.fall_through_block == node.get_dominator_block():
-                self.__relations.append(f"{node} -> {node.fall_through_block} [label=\"loop\", color=red, fontcolor=red];")
-            else:
-                self.__relations.append(f"{node} -> {node.fall_through_block} {fallthrough_label};")
+            self.__relations.append(f"{node} -> {node.fall_through_block} {fallthrough_label};")
         
-        if node.get_dominator_block() is not None:
-            self.__relations.append(f"{node.get_dominator_block()}:b -> {node}:b [color=blue, fontcolor=blue, style=dotted, label=\"dom\"]")
 
     def __traverse_instructions(self, node):
         instructions = "{"
