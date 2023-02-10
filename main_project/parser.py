@@ -202,7 +202,7 @@ class Parser:
         return self.__ssa.create_instruction(opc.cmp, op1, op2), opcode.type
     
     def __handle_while_statement(self):
-        pass
+        self.__syntax_error("While code is not completed yet, hence it is commented for now!")
         '''
         self.__ssa.split_block()
         instruction, opcode = self.__handle_relation()
