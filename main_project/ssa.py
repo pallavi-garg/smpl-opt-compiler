@@ -18,6 +18,8 @@ class SSA_Engine:
         self.__control_flow_main_blocks = []
         self.__search_ds = []
         self.__last_const_instruction = None
+        self.__last_fall_end = None
+        self.__last_branch_end = None
 
     def __initialize_ds(self):
     # initialized search data structure with None references to supported opcodes
@@ -134,6 +136,7 @@ class SSA_Engine:
             join_block = main_block.fall_through_block.join_block
 
         self.create_instruction(opc.bra, join_block)
+        self.__last_fall_end = self.__current_block
         
     def processing_branch(self):
     # sets current working block to branch block
@@ -152,6 +155,7 @@ class SSA_Engine:
         self.__search_data_structure = copy.deepcopy(top_search_ds)
     
     def end_branch(self):
+        self.__last_branch_end = self.__current_block
         self.__current_block = self.__current_block.join_block
 
     def end_control_flow(self, same_join_block = False):
@@ -170,48 +174,26 @@ class SSA_Engine:
                 self.__current_block.fall_through_block = self.__next_joining_phi
             self.__current_block = self.__next_joining_phi
             self.__next_joining_phi = None
-            self.__propagate_phi(from_phi, self.__current_block)
+            self.__propagate_phi_new(self.__last_fall_end, self.__last_branch_end)
             if same_join_block == True:
                 self.__current_block = self.__current_block.branch_block
                 self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
         elif same_join_block == True:
             self.__current_block = self.__current_block.branch_block
 
-    def __propagate_phi(self, from_block, to_block):
-    # adds phi instructions from from_block to given to_block
-        if from_block != None and to_block != None and from_block != to_block:
-            for instruction in from_block.instructions:
-                if isinstance(instruction, IR_Two_Operand) and instruction.op_code == opc.phi:
-                    id = None
-                    for key, val in from_block.symbol_table.items():
-                        if val == instruction:
-                            id = key
-                            break
-                    if id is None:
-                        continue
-                    use_existing_toblock_phi = False
-                    existing_phi = to_block.symbol_table[id]
-                    if existing_phi is not None and isinstance(existing_phi, IR_Two_Operand) and existing_phi.op_code == opc.phi:
-                        use_existing_toblock_phi = True
-
-                    # By default all phi is added as if from_block is coming from right
-                    operand1 = to_block.symbol_table[id] if use_existing_toblock_phi == False else existing_phi.operand1
-                    operand2 = instruction
-
-                    if self.__is_join_and_start_of_while(to_block) == False and self.__is_left_block(to_block.get_dominator_block(), from_block):
-                        operand1 = instruction
-                        operand2 = to_block.symbol_table[id] if use_existing_toblock_phi == False else existing_phi.operand2
-
-                    if use_existing_toblock_phi:
-                        existing_phi.operand1 = operand1
-                        existing_phi.operand2 = operand2
-                    elif operand1 == operand2 and operand1 == to_block.symbol_table[id]:
-                        #if everything is already same, then no need to add phi
-                        pass
-                    else:
-                        new_phi = IR_Two_Operand(opc.phi, operand1, operand2)
-                        to_block.instructions.insert(0, new_phi)
-                        to_block.symbol_table[id] = new_phi
+    def __propagate_phi_new(self, left_block, right_block):
+        for id in self.__current_block.symbol_table:
+            existing_val = self.__current_block.symbol_table[id]
+            if existing_val is None or existing_val.op_code != opc.phi:
+                if left_block.symbol_table[id] != right_block.symbol_table[id]:
+                    phi = IR_Two_Operand(opc.phi, left_block.symbol_table[id], right_block.symbol_table[id])
+                    self.__current_block.instructions.insert(0, phi)
+                    self.__current_block.symbol_table[id] = phi
+                else:
+                    self.__current_block.symbol_table[id] = left_block.symbol_table[id]
+            elif existing_val.op_code == opc.phi:
+                existing_val.operand1 = left_block.symbol_table[id]
+                existing_val.operand2 = right_block.symbol_table[id]
 
     def __get_instruction(self, opcode, operand1 = None, operand2 = None):
     # check in hierarchy of search data structure
@@ -272,9 +254,6 @@ class SSA_Engine:
             dom = dom.get_dominator_block()
         return False
 
-    def __is_join_and_start_of_while(self, block):
-        return block.fall_through_block is not None and block.fall_through_block.join_block == block
-
     def __is_left_block(self, dominator_block, block):
     # returns true if block is left block of dominator_block
         left_block = False
@@ -288,7 +267,7 @@ class SSA_Engine:
             left_block = True
         return left_block
 
-    def __added_assignment(self, id, propagate = True):
+    def __added_assignment(self, id):
     # adds phi instruction in join block
         join_block, dominating_block = self.__get_blocks_for_adding_phi()
             
