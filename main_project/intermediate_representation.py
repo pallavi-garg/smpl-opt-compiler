@@ -11,10 +11,11 @@ class IR:
         IR.__next_ir_number += 1
         return num
 
-    def __init__(self, op_code):
+    def __init__(self, op_code, container = None):
         self.instruction_number = IR.get_next_ir_number()
         self.op_code = op_code
         self.prev_search_ds = None
+        self.__container = container
 
     def __str__(self):
         return f"({self.instruction_number}) : {self.op_code}"
@@ -35,10 +36,13 @@ class IR:
     def __eq__(self, other) -> bool:
         return isinstance(other, IR) and self.instruction_number == other.instruction_number
     
+    def get_container(self):
+        return self.__container
+    
 class IR_One_Operand(IR):
 # Intermediate Representation with 1 operand
-    def __init__(self, op_code, operand):
-        super().__init__(op_code)
+    def __init__(self, op_code, operand, container = None):
+        super().__init__(op_code, container)
         self.operand = operand
     
     def __str__(self):
@@ -50,8 +54,8 @@ class IR_One_Operand(IR):
 
 class IR_Two_Operand(IR):
 # Intermediate Representation with 2 operands
-    def __init__(self, op_code, operand1, operand2):
-        super().__init__(op_code)
+    def __init__(self, op_code, operand1, operand2, container = None):
+        super().__init__(op_code, container)
         self.operand1 = operand1
         self.operand2 = operand2
     

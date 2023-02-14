@@ -16,6 +16,7 @@ var a, b, x, y;
 			call OutputNum(a);
 		else
 			let x <- a + 3;
+			let x <- a + 99;
 			call OutputNum(x);
 			call OutputNum(a);
 		fi;
