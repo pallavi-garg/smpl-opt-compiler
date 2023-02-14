@@ -13,8 +13,6 @@ class SSA_Engine:
         self.__current_block.set_dominator_block(self.__root_block)
         self.__root_block.fall_through_block = self.__current_block
         self.__nesting_stage = 0
-        #join block of block where nesting started
-        self.__next_joining_phi = None
         self.__control_flow_main_blocks = []
         self.__search_ds = search_ds()  
     
@@ -93,8 +91,6 @@ class SSA_Engine:
         self.__current_block = self.__current_block.fall_through_block        
         self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
         self.__nesting_stage += 1
-        if self.__next_joining_phi is None:
-            self.__next_joining_phi = self.__current_block.join_block
 
     def end_fall_through(self):
     # adds branch instruction if current block is a fall through block. This is done to prevent branch block instructions
