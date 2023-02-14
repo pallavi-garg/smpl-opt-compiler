@@ -33,7 +33,7 @@ class Dot_Graph:
             fallthrough_label = f"[label=\"fall-through\"]"
             
         if node.get_dominator_block() is not None:
-            self.__relations.append(f"{node.get_dominator_block()} -> {node} [color=blue, fontcolor=blue, style=dotted, label=\"dom\"]")
+            self.__relations.append(f"{node.get_dominator_block()}:b -> {node}:b [color=blue, style=dotted, label=\"dom\"]")
         
         if node.fall_through_block is not None:
             self.__relations.append(f"{node} -> {node.fall_through_block} {fallthrough_label};")

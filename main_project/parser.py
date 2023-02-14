@@ -202,8 +202,8 @@ class Parser:
         return self.__ssa.create_instruction(opc.cmp, op1, op2), opcode.type
     
     def __handle_while_statement(self):
-        self.__syntax_error("While code is not completed yet, hence it is commented for now!")
-        '''
+        print("NOTE: While code is not completed yet, hence there are few bugs here in phi propagation!")
+        
         self.__ssa.split_block()
         instruction, opcode = self.__handle_relation()
         left_block, right_block, join_block = self.__ssa.create_control_flow(instruction, self.relational_operators[opcode], True)
@@ -213,7 +213,6 @@ class Parser:
         self.__ssa.end_fall_through()
         self.__consume(Token_Type.Od)
         self.__ssa.end_loop_control_flow(left_block, right_block, join_block)
-        '''
-
+        
     def __handle_return_statement(self):
         pass
