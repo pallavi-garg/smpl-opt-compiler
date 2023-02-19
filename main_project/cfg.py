@@ -1,5 +1,3 @@
-import copy
-
 class Control_Flow_Graph:
 # Represents abstract syntax tree generated with nodes represented by Basic_Block
     
@@ -50,7 +48,7 @@ class Basic_Block:
     def set_dominator_block(self, dominant_block):
         self.__dominant_block = dominant_block
         if dominant_block is not None:
-            self.symbol_table = copy.deepcopy(self.__dominant_block.symbol_table)
+            self.symbol_table = self.__dominant_block.symbol_table.copy()
 
     def get_dominator_block(self):
         return self.__dominant_block 
@@ -68,3 +66,7 @@ class Basic_Block:
 
     def get_instructions(self):
         return self.__instructions
+
+    def remove_instructions(self, instructions):
+        for i in instructions:
+            self.__instructions.remove(i)

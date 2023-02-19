@@ -16,6 +16,7 @@ class IR:
         self.op_code = op_code
         self.prev_search_ds = None
         self.__container = container
+        self.used_in = []
 
     def __str__(self):
         return f"({self.instruction_number}) : {self.op_code}"

@@ -223,6 +223,7 @@ class Parser:
     
     def __handle_while_statement(self):
         self.__ssa.split_block()
+        self.__ssa.update_join_block()
         instruction, opcode = self.__handle_relation()
         left_block, right_block, join_block = self.__ssa.create_control_flow(instruction, self.relational_operators[opcode], True)
         self.__consume(Token_Type.Do)
