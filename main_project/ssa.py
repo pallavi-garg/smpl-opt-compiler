@@ -1,8 +1,6 @@
 from .intermediate_representation import IR, IR_One_Operand, IR_Two_Operand, IR_OP as opc
 from .cfg import Control_Flow_Graph, Basic_Block as bb
-import copy
 from .search_data_structure import search_ds
-from .use_chain import Use_Chain
 
 class SSA_Engine:
     # holds objects required in SSA calculations
@@ -16,7 +14,6 @@ class SSA_Engine:
         self.__nesting_stage = 0
         self.__control_flow_main_blocks = []
         self.__search_ds = search_ds()
-        self.__use_chain = Use_Chain()  
     
     def get_cfg(self):
     # returns cfg
@@ -162,19 +159,14 @@ class SSA_Engine:
                 to_delete.append(phi_instruction)
         join_block.remove_instructions(to_delete)
         
-
-    def __propagate_phi(self, left_block, right_block, join_block, move_down = False):
+    def __propagate_phi(self, left_block, right_block, join_block):
         for id in join_block.symbol_table:
-            old_val = None
-            new_val = None
             existing_val = join_block.symbol_table[id]
             if existing_val is None or existing_val.op_code != opc.phi:
                 if left_block.symbol_table[id] != right_block.symbol_table[id]:
                     phi = IR_Two_Operand(opc.phi, left_block.symbol_table[id], right_block.symbol_table[id])
                     join_block.add_instruction(phi, 0)
-                    old_val = join_block.symbol_table[id]
                     join_block.symbol_table[id] = phi
-                    new_val = phi
                     if isinstance(phi.operand1, IR_Two_Operand) and phi.operand1.op_code == opc.phi:
                         phi.operand1.used_in.append(phi)
                     if isinstance(phi.operand2, IR_Two_Operand) and phi.operand2.op_code == opc.phi:
@@ -187,63 +179,17 @@ class SSA_Engine:
                     existing_val.operand1 = left_block.symbol_table[id]
                 existing_val.operand2 = right_block.symbol_table[id]
 
-            #if move_down == True and old_val is not None and new_val is not None:
-                #self.__move_new_values_down(join_block, id, old_val, new_val)
-
     def end_loop_control_flow(self, left, right, join_block):
-        self.__use_chain.print()
-
         self.__control_flow_main_blocks.pop()
         left.fall_through_block = join_block
 
-        self.__propagate_phi(join_block, left, join_block, move_down = True)
+        self.__propagate_phi(join_block, left, join_block)
         self.cleanup_phi(join_block)
 
         self.__current_block = right
         self.__current_block.symbol_table = join_block.symbol_table
 
-    def __move_new_values_down(self, join_block, variable_id, old_val, new_val):
-        all_uses = self.__use_chain.get_all_uses(variable_id)
-        if all_uses is not None:
-            for use in all_uses:
-                instruction = use[0]
-                used_as_first_operand = use[1]
-                if instruction.instruction_number >= join_block.first_instruction_number:
-                    if used_as_first_operand:
-                        if isinstance(instruction, IR_One_Operand):
-                            #TODO:test 1 operand instruction
-                            if instruction.operand == new_val.operand1:
-                                instruction.operand = new_val
-                                self.__replace_instuction(instruction, variable_id, old_val, None, used_as_first_operand)
-                        elif instruction.operand1 == new_val.operand1:
-                            instruction.operand1 = new_val
-                            self.__replace_instuction(instruction, variable_id, old_val, instruction.operand2, used_as_first_operand)
-                    elif instruction.operand2 == new_val.operand1:
-                        instruction.operand2 = new_val 
-                        self.__replace_instuction(instruction, variable_id, instruction.operand1, old_val, used_as_first_operand)
-        for id in self.__current_block.symbol_table:
-            if id != variable_id and self.__current_block.symbol_table[id] == old_val:
-                self.__current_block.symbol_table[id] = new_val
-                self.__move_new_values_down(join_block, id, old_val, new_val)
-                #TODO:update uses of id now
-    
-    def __replace_instuction(self, instruction, variable_id, op1, op2, used_as_first_operand):
-        for other_variable in self.__current_block.symbol_table:
-            if other_variable != variable_id and self.__current_block.symbol_table[other_variable].instruction_number == instruction.instruction_number:
-                new_instruction = None
-                if isinstance(instruction, IR_One_Operand):
-                    new_instruction = IR_One_Operand(instruction.op_code, op1)
-                else:
-                    new_instruction = IR_Two_Operand(instruction.op_code, op1, op2)
-
-                block = instruction.get_container()
-                index = block.get_instructions().index(instruction)
-                block.add_instruction(new_instruction, index + 1)
-                self.__current_block.symbol_table[other_variable] = new_instruction
-                self.__use_chain.replace(instruction, new_instruction, other_variable, used_as_first_operand)
-
-
-    def create_instruction(self, opcode, operand1 = None, operand2 = None, variable_name1 = None, variable_name2 = None):
+    def create_instruction(self, opcode, operand1 = None, operand2 = None):
     # creates new instruction or returns previous common sub expression
         instruction = self.__search_ds.get(opcode, operand1, operand2, self.__current_block)
                 
@@ -265,16 +211,11 @@ class SSA_Engine:
                 raise Exception(f"Unknown command '{opcode}'!")
             self.__search_ds.add(opcode, instruction)
 
-        if variable_name1 is not None:
-            self.__use_chain.used(variable_name1, instruction, True)
-        if variable_name2 is not None:
-            self.__use_chain.used(variable_name2, instruction, False)
-
-        if isinstance(operand1, IR) and operand1.op_code == opc.phi:
-            operand1.used_in.append(instruction)
-        
-        if isinstance(operand2, IR) and operand2.op_code == opc.phi:
-            operand2.used_in.append(instruction)
+            if isinstance(operand1, IR) and operand1.op_code == opc.phi:
+                operand1.used_in.append(instruction)
+            
+            if isinstance(operand2, IR) and operand2.op_code == opc.phi:
+                operand2.used_in.append(instruction)
 
         return instruction
         
