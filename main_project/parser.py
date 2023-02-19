@@ -5,7 +5,7 @@ Parser for grammar defined in ../grammars/smpl_grammar.txt
 
 from .tokenizer import Tokenizer
 from .token_types import Token_Type
-from .intermediate_representation import IR_OP as opc
+from .intermediate_representation import IR_OP as opc, IR
 from .ssa import SSA_Engine
 
 class Parser:
@@ -36,6 +36,9 @@ class Parser:
         self.__consume(Token_Type.End)
         self.__consume(Token_Type.Period)
         self.__ssa.create_instruction(opc.end)
+        return self.__ssa.get_cfg()
+    
+    def get_cfg(self):
         return self.__ssa.get_cfg()
     
     def __syntax_error(self, error):
@@ -106,7 +109,8 @@ class Parser:
             fn_type = self.__tokenizer.token.type
             self.__consume(self.__tokenizer.token.type)
             if fn_type in [Token_Type.Fn_OutputNum]:
-                self.__ssa.create_instruction(opc.write, self.__expression())
+                val, var1 = self.__expression()
+                self.__ssa.create_instruction(opc.write, val, variable_name1 = var1)
             else:
                 self.__ssa.create_instruction(opc.writeNL)
             self.__consume(Token_Type.CloseParanthesis)
@@ -123,7 +127,8 @@ class Parser:
                 self.__consume(Token_Type.CloseParanthesis)
                 self.__insert_identifier(id, self.__ssa.create_instruction(opc.read))
             else:
-                self.__insert_identifier(id, self.__expression())
+                val, _ = self.__expression()
+                self.__insert_identifier(id, val)
         else:
             self.__syntax_error("Expected identifier assignment")
 
@@ -137,28 +142,38 @@ class Parser:
 
     def __expression(self):
     # calculate expression
-        instruction = self.__term()
+        instruction, var1 = self.__term()
+        var2 = var1
 
         while self.__tokenizer.token and self.__tokenizer.token.type in [Token_Type.Plus, Token_Type.Minus]:
+            var1 = var2
             token_type = self.__tokenizer.token.type
             self.__consume(token_type)
             opcode = opc.add if token_type == Token_Type.Plus else opc.sub
-            instruction = self.__ssa.create_instruction(opcode, instruction, self.__term())
-        return instruction
+            instruction2, var2 = self.__term()
+            instruction = self.__ssa.create_instruction(opcode, instruction, instruction2, var1, var2)
+        
+        return instruction, var1
 
     def __term(self):
     # calculate term
-        instruction = self.__factor()
+        instruction, var1 = self.__factor()
+        var2 = var1
+
         while self.__tokenizer.token and self.__tokenizer.token.type in [Token_Type.Mul, Token_Type.Div]:
+            var1 = var2
             token_type = self.__tokenizer.token.type
             self.__consume(token_type)
             opcode = opc.div if token_type == Token_Type.Div else opc.mul
-            instruction = self.__ssa.create_instruction(opcode, instruction, self.__factor())
-        return instruction
+            instruction2, var2 = self.__factor()
+            instruction = self.__ssa.create_instruction(opcode, instruction, instruction2, var1, var2)
+
+        return instruction, var1
 
     def __factor(self):
     # calculates factor
         instruction = None
+        variable_used = None
         if self.__tokenizer.token:
             if self.__tokenizer.token.type == Token_Type.OpenParanthesis:
                 self.__consume(Token_Type.OpenParanthesis)
@@ -172,10 +187,11 @@ class Parser:
                 self.__consume(Token_Type.Number)
             elif self.__tokenizer.token.type == Token_Type.Identifier:
                 instruction = self.__look_up(self.__tokenizer.token.id)
+                variable_used = self.__tokenizer.token.id
                 self.__consume(Token_Type.Identifier)
         else:
             self.__syntax_error("Syntax error in factor")
-        return instruction
+        return instruction, variable_used
 
     def __handle_if_statement(self):
         instruction, opcode = self.__handle_relation()
@@ -193,17 +209,19 @@ class Parser:
         self.__ssa.end_control_flow(left_block, right_block, join_block)
                 
     def __handle_relation(self):
-        op1 = self.__expression()
+        op1, v1 = self.__expression()
         opcode = self.__tokenizer.token
         if opcode.type not in self.relational_operators:
             self.__syntax_error("Expected a relational operator.")
         self.__consume(opcode.type)
-        op2 = self.__expression()
-        return self.__ssa.create_instruction(opc.cmp, op1, op2), opcode.type
+        op2, v2 = self.__expression()
+        print(op1)
+        #if op1 is const then add to v1 to use chain otherwise no need to add. same for op2
+        var1 = v1 if isinstance(op1, IR) and op1.op_code == opc.const else None
+        var2 = v2 if isinstance(op2, IR) and op2.op_code == opc.const else None
+        return self.__ssa.create_instruction(opc.cmp, op1, op2, var1, var2), opcode.type
     
     def __handle_while_statement(self):
-        print("NOTE: While code is not completed yet, hence there are few bugs here in phi propagation!")
-        
         self.__ssa.split_block()
         instruction, opcode = self.__handle_relation()
         left_block, right_block, join_block = self.__ssa.create_control_flow(instruction, self.relational_operators[opcode], True)

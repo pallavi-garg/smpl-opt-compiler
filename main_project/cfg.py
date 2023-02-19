@@ -36,11 +36,11 @@ class Basic_Block:
 
     def __init__(self, dominant_block = None):
         self.__name = f'BB{Basic_Block.get_next_ir_number()}'
+        self.first_instruction_number = -1
         self.fall_through_block = None
         self.branch_block = None
         self.join_block = None
-        self.instructions = []
-        self.use_chain = {}
+        self.__instructions = []
         self.symbol_table = {}
         self.set_dominator_block(dominant_block)
 
@@ -57,3 +57,14 @@ class Basic_Block:
     
     def __str__(self):
         return f"{self.__name}"
+
+    def add_instruction(self, instruction, index = None):
+        if self.first_instruction_number == -1:
+            self.first_instruction_number = instruction.instruction_number
+        if index is None:
+            self.__instructions.append(instruction)
+        else:
+            self.__instructions.insert(index, instruction)
+
+    def get_instructions(self):
+        return self.__instructions

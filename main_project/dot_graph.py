@@ -41,10 +41,10 @@ class Dot_Graph:
 
     def __traverse_instructions(self, node):
         instructions = "{"
-        if len(node.instructions) == 0:
+        if len(node.get_instructions()) == 0:
             instructions += "\<empty\>"
         else:
-            for instruction in node.instructions:
+            for instruction in node.get_instructions():
                 instructions += f" {instruction} |"
             instructions = instructions.rstrip(instructions[-1])
         instructions += "}"

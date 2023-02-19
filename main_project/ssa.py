@@ -2,6 +2,7 @@ from .intermediate_representation import IR, IR_One_Operand, IR_Two_Operand, IR_
 from .cfg import Control_Flow_Graph, Basic_Block as bb
 import copy
 from .search_data_structure import search_ds
+from .use_chain import Use_Chain
 
 class SSA_Engine:
     # holds objects required in SSA calculations
@@ -14,7 +15,8 @@ class SSA_Engine:
         self.__root_block.fall_through_block = self.__current_block
         self.__nesting_stage = 0
         self.__control_flow_main_blocks = []
-        self.__search_ds = search_ds()  
+        self.__search_ds = search_ds()
+        self.__use_chain = Use_Chain()  
     
     def get_cfg(self):
     # returns cfg
@@ -33,14 +35,17 @@ class SSA_Engine:
     def __is_undefined(self, operand, already_looked_instructions):
     # returns true if operand is undefined variable value
         if self.uninitialized_instruction == operand:
+            already_looked_instructions.append(operand)
             return True
         elif isinstance(operand, IR_One_Operand):
+            already_looked_instructions.append(operand)
             return operand.op_code == opc.undefined
         elif operand not in already_looked_instructions and isinstance(operand, IR_Two_Operand):
-            val = self.__is_undefined(operand.operand1, already_looked_instructions) or self.__is_undefined(operand.operand2, already_looked_instructions)
             already_looked_instructions.append(operand)
+            val = self.__is_undefined(operand.operand1, already_looked_instructions) or self.__is_undefined(operand.operand2, already_looked_instructions)
             return val
         else:
+            already_looked_instructions.append(operand)
             return False
     
     def is_identifier_defined(self, id):
@@ -56,7 +61,7 @@ class SSA_Engine:
         self.__current_block.symbol_table[id] = value
     
     def split_block(self):
-        if len(self.__current_block.instructions) > 0:
+        if len(self.__current_block.get_instructions()) > 0:
             prev = self.__current_block
             self.__current_block = self.__cfg.get_new_block()
             self.__current_block.set_dominator_block(prev)
@@ -134,17 +139,19 @@ class SSA_Engine:
             right_block = right_block.fall_through_block
         self.__propagate_phi(left_block, right_block, join_block)
 
-    def __propagate_phi(self, left_block, right_block, join_block):
-        modified_variables = {}
+    def __propagate_phi(self, left_block, right_block, join_block, move_down = False):
+        
         for id in join_block.symbol_table:
+            old_val = None
+            new_val = None
             existing_val = join_block.symbol_table[id]
             if existing_val is None or existing_val.op_code != opc.phi:
                 if left_block.symbol_table[id] != right_block.symbol_table[id]:
                     phi = IR_Two_Operand(opc.phi, left_block.symbol_table[id], right_block.symbol_table[id])
-                    join_block.instructions.insert(0, phi)
+                    join_block.add_instruction(phi, 0)
                     old_val = join_block.symbol_table[id]
                     join_block.symbol_table[id] = phi
-                    modified_variables[old_val.instruction_number] = join_block.symbol_table[id]
+                    new_val = phi
                 else:
                     join_block.symbol_table[id] = left_block.symbol_table[id]
             elif existing_val.op_code == opc.phi:
@@ -152,33 +159,62 @@ class SSA_Engine:
                 if join_block != left_block:
                     existing_val.operand1 = left_block.symbol_table[id]
                 existing_val.operand2 = right_block.symbol_table[id]
-        return modified_variables
+
+            if move_down == True and old_val is not None and new_val is not None:
+                self.__move_new_values_down(join_block, id, old_val, new_val)
 
     def end_loop_control_flow(self, left, right, join_block):
+        self.__use_chain.print()
+
         self.__control_flow_main_blocks.pop()
         left.fall_through_block = join_block
 
-        modified_variables = self.__propagate_phi(join_block, left, join_block)
-        self.__move_new_values_down(left, join_block, modified_variables)
+        self.__propagate_phi(join_block, left, join_block, move_down = True)
         self.__current_block = right
-        #TODO: self.__current_block.symbol_table = join_block.symbol_table
+        self.__current_block.symbol_table = join_block.symbol_table
 
-    def __move_new_values_down(self, loop_body, join_block, modified_variables):
-        all_instructions = join_block.instructions + loop_body.instructions
-        for instruction in all_instructions:
-            if isinstance(instruction, IR_One_Operand) and isinstance(instruction.operand, IR) and instruction.operand.instruction_number in modified_variables:
-                if instruction.instruction_number < modified_variables[instruction.operand.instruction_number].instruction_number:
-                    instruction.operand = modified_variables[instruction.operand.instruction_number]
-            elif isinstance(instruction, IR_Two_Operand):
-                if instruction.operand1 and isinstance(instruction.operand1, IR) and instruction.operand1.instruction_number in modified_variables:
-                    if instruction.instruction_number < modified_variables[instruction.operand1.instruction_number].instruction_number:
-                        instruction.operand1 = modified_variables[instruction.operand1.instruction_number]
-                if instruction.operand2 and isinstance(instruction.operand2, IR) and instruction.operand2.instruction_number in modified_variables:
-                    if instruction.instruction_number < modified_variables[instruction.operand2.instruction_number].instruction_number:
-                        instruction.operand2 = modified_variables[instruction.operand2.instruction_number]
-            #TODO: Add new instruction when instruction is updated but was also used for some other variable
+    def __move_new_values_down(self, join_block, variable_id, old_val, new_val):
+        all_uses = self.__use_chain.get_all_uses(variable_id)
+        if all_uses is not None:
+            for use in all_uses:
+                instruction = use[0]
+                used_as_first_operand = use[1]
+                if instruction.instruction_number >= join_block.first_instruction_number:
+                    if used_as_first_operand:
+                        if isinstance(instruction, IR_One_Operand):
+                            #TODO:test 1 operand instruction
+                            if instruction.operand == new_val.operand1:
+                                instruction.operand = new_val
+                                self.__replace_instuction(instruction, variable_id, old_val, None, used_as_first_operand)
+                        elif instruction.operand1 == new_val.operand1:
+                            instruction.operand1 = new_val
+                            self.__replace_instuction(instruction, variable_id, old_val, instruction.operand2, used_as_first_operand)
+                    elif instruction.operand2 == new_val.operand1:
+                        instruction.operand2 = new_val 
+                        self.__replace_instuction(instruction, variable_id, instruction.operand1, old_val, used_as_first_operand)
+        for id in self.__current_block.symbol_table:
+            if id != variable_id and self.__current_block.symbol_table[id] == old_val:
+                self.__current_block.symbol_table[id] = new_val
+                self.__move_new_values_down(join_block, id, old_val, new_val)
+                #TODO:update uses of id now
+    
+    def __replace_instuction(self, instruction, variable_id, op1, op2, used_as_first_operand):
+        for other_variable in self.__current_block.symbol_table:
+            if other_variable != variable_id and self.__current_block.symbol_table[other_variable].instruction_number == instruction.instruction_number:
+                new_instruction = None
+                if isinstance(instruction, IR_One_Operand):
+                    new_instruction = IR_One_Operand(instruction.op_code, op1)
+                else:
+                    new_instruction = IR_Two_Operand(instruction.op_code, op1, op2)
 
-    def create_instruction(self, opcode, operand1 = None, operand2 = None):
+                block = instruction.get_container()
+                index = block.get_instructions().index(instruction)
+                block.add_instruction(new_instruction, index + 1)
+                self.__current_block.symbol_table[other_variable] = new_instruction
+                self.__use_chain.replace(instruction, new_instruction, other_variable, used_as_first_operand)
+
+
+    def create_instruction(self, opcode, operand1 = None, operand2 = None, variable_name1 = None, variable_name2 = None):
     # creates new instruction or returns previous common sub expression
         instruction = self.__search_ds.get(opcode, operand1, operand2, self.__current_block)
                 
@@ -186,19 +222,24 @@ class SSA_Engine:
         if instruction is None:
             if opcode in [opc.add, opc.sub, opc.mul, opc.div, opc.cmp, opc.bne, opc.beq, opc.ble, opc.blt, opc.bge, opc.bgt]:
                 instruction = IR_Two_Operand(opcode, operand1, operand2, self.__current_block)
-                self.__current_block.instructions.append(instruction)
+                self.__current_block.add_instruction(instruction)
             elif opcode in [opc.end, opc.read, opc.writeNL]:
                 instruction = IR(opcode, self.__current_block)
-                self.__current_block.instructions.append(instruction)
+                self.__current_block.add_instruction(instruction)
             elif opcode in [opc.bra, opc.write]:
                 instruction = IR_One_Operand(opcode, operand1, self.__current_block)
-                self.__current_block.instructions.append(instruction)
+                self.__current_block.add_instruction(instruction)
             elif opcode == opc.const:
                 instruction = IR_One_Operand(opcode, operand1, self.__root_block)
-                self.__root_block.instructions.append(instruction)
+                self.__root_block.add_instruction(instruction)
             else:
                 raise Exception(f"Unknown command '{opcode}'!")
             self.__search_ds.add(opcode, instruction)
+
+        if variable_name1 is not None:
+            self.__use_chain.used(variable_name1, instruction, True)
+        if variable_name2 is not None:
+            self.__use_chain.used(variable_name2, instruction, False)
 
         return instruction
         

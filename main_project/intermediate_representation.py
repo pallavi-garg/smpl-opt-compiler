@@ -28,8 +28,8 @@ class IR:
                 return f"(0?)"
             else:
                 return f"({operand.instruction_number})"
-        elif isinstance(operand, Basic_Block) and operand.instructions:
-            return f"{operand}{self.format_operand(operand.instructions[0])}"
+        elif isinstance(operand, Basic_Block) and operand.get_instructions():
+            return f"{operand}{self.format_operand(operand.get_instructions()[0])}"
         else:
             return f"{operand}"
 
@@ -49,7 +49,7 @@ class IR_One_Operand(IR):
         return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.operand)}"
     
     def __eq__(self, other) -> bool:
-        return isinstance(other, IR_One_Operand) and self.instruction_number == other.instruction_number and self.operand == other.operand
+        return isinstance(other, IR_One_Operand) and f"{self}" == f"{other}"
 
 
 class IR_Two_Operand(IR):
