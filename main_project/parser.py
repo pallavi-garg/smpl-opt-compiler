@@ -82,6 +82,8 @@ class Parser:
 
     def __consume_sequence_statements(self):
     # consumes multiple statement declarations
+        if self.__tokenizer.token is None or self.__tokenizer.token.type not in self.statement_starter:
+            self.__syntax_error(f"Expected a statement but not found!")
         while self.__tokenizer.token and self.__tokenizer.token.type in self.statement_starter:
             statement_type = self.__tokenizer.token.type
             self.__consume(statement_type)

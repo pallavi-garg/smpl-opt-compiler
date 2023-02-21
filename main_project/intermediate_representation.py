@@ -16,7 +16,6 @@ class IR:
         self.op_code = op_code
         self.prev_search_ds = None
         self.__container = container
-        self.used_in = []
 
     def __str__(self):
         return f"({self.instruction_number}) : {self.op_code}"
@@ -52,7 +51,6 @@ class IR_One_Operand(IR):
     def __eq__(self, other) -> bool:
         return isinstance(other, IR_One_Operand) and f"{self}" == f"{other}"
 
-
 class IR_Two_Operand(IR):
 # Intermediate Representation with 2 operands
     def __init__(self, op_code, operand1, operand2, container = None):
@@ -65,6 +63,12 @@ class IR_Two_Operand(IR):
 
     def __eq__(self, other) -> bool:
         return isinstance(other, IR_Two_Operand) and f"{self}" == f"{other}"
+    
+class IR_Phi(IR_Two_Operand):
+# Intermediate Representation with 2 operands
+    def __init__(self, operand1, operand2, container = None):
+        super().__init__(IR_OP.phi, operand1, operand2, container)
+        self.use_chain = []
 
 class IR_OP:
     add = 'add' # add x y       -> x+y

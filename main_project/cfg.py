@@ -20,6 +20,32 @@ class Control_Flow_Graph:
     def get_blocks(self):
     # returns root block
         return self.__blocks
+    
+    def __delete_empty_blocks(self):
+        to_delete = []
+        for block in self.__blocks:
+            if block.branch_block is not None:
+                instructions_in_branch_block = block.branch_block.get_instructions()
+                if len(instructions_in_branch_block) == 0:
+                    branch_instruction = block.get_instructions()[-1]
+                    branch_instruction.operand2 = block.branch_block.fall_through_block
+                    if branch_instruction.operand2 is None:
+                        branch_instruction.operand2 = block.branch_block.branch_block
+                    if branch_instruction.operand2 is None:
+                        branch_instruction.operand2 = block.branch_block.join_block
+                    to_delete.append(block.branch_block)
+                    block.branch_block = branch_instruction.operand2
+        
+        for block in to_delete:
+            self.__blocks.remove(block)
+    
+    def clean_up(self):
+        self.__delete_empty_blocks()
+
+    def print(self):
+        for block in self.__blocks:
+            print(f"name -> {block} : fall -> {block.fall_through_block}, branch -> {block.branch_block}, join -> {block.join_block}")
+        self.clean_up()
 
 class Basic_Block:
 # Class to represent basic block.
