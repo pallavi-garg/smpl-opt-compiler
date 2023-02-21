@@ -31,6 +31,37 @@ class search_ds:
                 matched = matched.prev_search_ds
         return matched
 
+    def get_next(self, instruction):
+    # returns next common sub expression matching with given instruction
+        matched = None
+        container = instruction.get_container()
+        if instruction.op_code in self.__map:
+            matched = self.__map[instruction.op_code]
+            skip = matched == instruction
+            while(matched is not None):
+                if skip == False and isinstance(matched, IR_Two_Operand) and matched.operand1 == instruction.operand1 and matched.operand2 == instruction.operand2 and self.__is_dominating(container, matched) == True:
+                    break
+                elif skip == False and isinstance(matched, IR_One_Operand) and matched.operand == instruction.operand and self.__is_dominating(container, matched) == True:
+                    break
+                matched = matched.prev_search_ds
+                skip = matched == instruction
+        if matched == instruction:
+            matched = None
+        return matched
+
+    def delete(self, instruction):
+        if instruction.op_code in self.__map:
+            curr = self.__map[instruction.op_code]
+            if curr is not None and curr == instruction:
+                self.__map[instruction.op_code] = curr.prev_search_ds
+            elif curr is not None:
+                prev = curr
+                while curr != instruction and curr is not None:
+                    prev = curr
+                    curr = curr.prev_search_ds
+                if curr is not None:
+                    prev.prev_search_ds = curr.prev_search_ds
+
     def __is_dominating(self, container, instruction):
         if container == instruction.get_container():
             return True

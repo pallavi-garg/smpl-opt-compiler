@@ -70,7 +70,7 @@ class SSA_Engine:
             phi = IR_Phi(self.__current_block.symbol_table[id], None)
             self.__current_block.add_instruction(phi)
             self.__current_block.symbol_table[id] = phi
-            if isinstance(phi.operand1, IR_Phi):
+            if isinstance(phi.operand1, IR):
                 phi.operand1.use_chain.append(phi)
 
     def create_control_flow(self, instruction, opcode, use_current_as_join):
@@ -154,21 +154,50 @@ class SSA_Engine:
     
     def cleanup_phi(self, join_block):
         to_delete = []
+        modified = []
         for phi_instruction in join_block.get_instructions():
-            if isinstance(phi_instruction, IR_Phi) and phi_instruction.instruction_number == phi_instruction.operand2.instruction_number:
-                for instruction in phi_instruction.use_chain:
-                    if isinstance(instruction, IR_One_Operand) and instruction.operand == phi_instruction:
-                        instruction.operand = phi_instruction.operand1
-                    elif isinstance(instruction, IR_Two_Operand):
-                        if instruction.operand1 == phi_instruction:
-                            instruction.operand1 = phi_instruction.operand1
-                        if instruction.operand2 == phi_instruction:
-                            instruction.operand2 = phi_instruction.operand1
-                to_delete.append(phi_instruction)
+            if isinstance(phi_instruction, IR_Phi):
+                if phi_instruction.instruction_number == phi_instruction.operand2.instruction_number:
+                    for instruction in phi_instruction.use_chain:
+                        if isinstance(instruction, IR_One_Operand) and instruction.operand == phi_instruction:
+                            instruction.operand = phi_instruction.operand1
+                            modified.append(instruction)
+                        elif isinstance(instruction, IR_Two_Operand):
+                            if instruction.operand1 == phi_instruction:
+                                instruction.operand1 = phi_instruction.operand1
+                                modified.append(instruction)
+                            if instruction.operand2 == phi_instruction:
+                                instruction.operand2 = phi_instruction.operand1
+                                modified.append(instruction)
+                    to_delete.append(phi_instruction)
         for id in join_block.symbol_table:
             if join_block.symbol_table[id] in to_delete:
                 join_block.symbol_table[id] = join_block.symbol_table[id].operand1
-        join_block.remove_instructions(to_delete)
+        
+        for phi in to_delete:
+            join_block.remove_instruction(phi)
+        
+        self.__update_modified(modified)
+
+    def __update_modified(self, modified_instructions):
+        while(len(modified_instructions) != 0):
+            instruction = modified_instructions.pop()
+            original_instruction = self.__search_ds.get_next(instruction)
+            block = instruction.get_container()
+            if original_instruction is not None:
+                self.__search_ds.delete(instruction)
+                block.remove_instruction(instruction)
+                for used in instruction.use_chain:
+                    if isinstance(used, IR_One_Operand) and used.operand == instruction:
+                        used.operand = original_instruction
+                        modified_instructions.append(used)
+                    if isinstance(used, IR_Two_Operand):
+                        if used.operand1 == instruction:
+                            used.operand1 = original_instruction
+                            modified_instructions.append(used)
+                        if used.operand2 == instruction:
+                            used.operand2 = original_instruction
+                            modified_instructions.append(used)
         
     def __propagate_phi(self, left_block, right_block, join_block, create_new = False):
         for id in join_block.symbol_table:
@@ -178,9 +207,9 @@ class SSA_Engine:
                     phi = IR_Phi(left_block.symbol_table[id], right_block.symbol_table[id])
                     join_block.add_instruction(phi, 0)
                     join_block.symbol_table[id] = phi
-                    if isinstance(phi.operand1, IR_Phi):
+                    if isinstance(phi.operand1, IR):
                         phi.operand1.use_chain.append(phi)
-                    if isinstance(phi.operand2, IR_Phi):
+                    if isinstance(phi.operand2, IR):
                         phi.operand2.use_chain.append(phi)
                 else:
                     join_block.symbol_table[id] = left_block.symbol_table[id]
@@ -189,8 +218,10 @@ class SSA_Engine:
                 if join_block != left_block:
                     existing_val.operand1 = left_block.symbol_table[id]
                 existing_val.operand2 = right_block.symbol_table[id]
+                if existing_val.operand2:
+                    existing_val.operand2.use_chain.append(existing_val)
 
-    def end_loop_control_flow(self, left, right, join_block):
+    def end_loop_control_flow(self, right, join_block):
         self.__control_flow_main_blocks.pop()
         self.__current_block.branch_block = join_block
 
@@ -222,10 +253,9 @@ class SSA_Engine:
                 raise Exception(f"Unknown command '{opcode}'!")
             self.__search_ds.add(opcode, instruction)
 
-            if isinstance(operand1, IR_Phi):
-                operand1.use_chain.append(instruction)
-            
-            if isinstance(operand2, IR_Phi):
+            if isinstance(operand1, IR):
+                operand1.use_chain.append(instruction)         
+            if isinstance(operand2, IR):
                 operand2.use_chain.append(instruction)
 
         return instruction

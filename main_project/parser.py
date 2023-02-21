@@ -213,13 +213,13 @@ class Parser:
         self.__ssa.split_block()
         self.__ssa.update_join_block()
         instruction, opcode = self.__handle_relation()
-        left_block, right_block, join_block = self.__ssa.create_control_flow(instruction, self.relational_operators[opcode], True)
+        _, right_block, join_block = self.__ssa.create_control_flow(instruction, self.relational_operators[opcode], True)
         self.__consume(Token_Type.Do)
         self.__ssa.processing_fall_through()
         self.__consume_sequence_statements()
         self.__ssa.end_fall_through()
         self.__consume(Token_Type.Od)
-        self.__ssa.end_loop_control_flow(left_block, right_block, join_block)
+        self.__ssa.end_loop_control_flow(right_block, join_block)
         
     def __handle_return_statement(self):
         pass

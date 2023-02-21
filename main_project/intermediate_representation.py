@@ -16,6 +16,7 @@ class IR:
         self.op_code = op_code
         self.prev_search_ds = None
         self.__container = container
+        self.use_chain = []
 
     def __str__(self):
         return f"({self.instruction_number}) : {self.op_code}"
@@ -68,7 +69,6 @@ class IR_Phi(IR_Two_Operand):
 # Intermediate Representation with 2 operands
     def __init__(self, operand1, operand2, container = None):
         super().__init__(IR_OP.phi, operand1, operand2, container)
-        self.use_chain = []
 
 class IR_OP:
     add = 'add' # add x y       -> x+y

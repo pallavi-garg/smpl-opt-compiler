@@ -93,6 +93,5 @@ class Basic_Block:
     def get_instructions(self):
         return self.__instructions
 
-    def remove_instructions(self, instructions):
-        for i in instructions:
-            self.__instructions.remove(i)
+    def remove_instruction(self, instruction):
+        self.__instructions.remove(instruction)
