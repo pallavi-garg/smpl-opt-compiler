@@ -1,4 +1,4 @@
-from .intermediate_representation import IR, IR_One_Operand, IR_Two_Operand, IR_OP as opc, IR_Phi
+from .intermediate_representation import IR, IR_One_Operand, IR_Two_Operand, IR_OP as opc, IR_Phi, IR_Memory_Allocation
 from .cfg import Control_Flow_Graph, Basic_Block as bb
 from .search_data_structure import search_ds
 
@@ -14,11 +14,13 @@ class SSA_Engine:
         self.__nesting_stage = 0
         self.__control_flow_main_blocks = []
         self.__search_ds = search_ds()
+        self.__int_size = None
+        self.__base_address = None
     
     def get_cfg(self):
     # returns cfg
         self.__cfg.clean_up()
-        return self.__cfg
+        return self.__cfg       
 
     def is_indentifier_uninitialized(self, id):
     # returns warnings found by ssa engine
@@ -57,6 +59,31 @@ class SSA_Engine:
     def set_identifier_val(self, id, value):
     # inserts value of id in symbol table
         self.__current_block.symbol_table[id] = value
+
+    def __get_location(self, id, indices):
+        val = self.__current_block.symbol_table[id]
+        mul = None
+        add = None
+        
+        for index in range(0, len(indices)):
+            index_offset = indices[index] if isinstance(indices[index], IR) else self.create_instruction(opc.const, indices[index])
+            size_offset = self.create_instruction(opc.const, val.indexers[index])
+            mul = self.create_instruction(opc.mul, index_offset, size_offset)
+            if add is not None:
+                add = self.create_instruction(opc.add, add, mul)
+            else:
+                add = mul
+
+        if self.__int_size is None:
+            self.__int_size = self.create_instruction(opc.const, IR_Memory_Allocation.Integer_Size)
+        mul = self.create_instruction(opc.mul, add, self.__int_size)
+        return mul
+
+    def get_array_value(self, id, indices):
+        return self.create_compound_instruction(opc.load, id, self.__get_location(id, indices))   
+
+    def set_array_value(self, id, indices, value):  
+        return self.create_compound_instruction(opc.store, id, self.__get_location(id, indices), value) 
     
     def split_block(self):
         if len(self.__current_block.get_instructions()) > 0:
@@ -249,6 +276,9 @@ class SSA_Engine:
             elif opcode == opc.const:
                 instruction = IR_One_Operand(opcode, operand1, self.__root_block)
                 self.__root_block.add_instruction(instruction)
+            elif opcode == opc.malloc:
+                instruction = IR_Memory_Allocation(operand1, self.__root_block)
+                self.__root_block.add_instruction(instruction)
             else:
                 raise Exception(f"Unknown command '{opcode}'!")
             self.__search_ds.add(opcode, instruction)
@@ -259,4 +289,21 @@ class SSA_Engine:
                 operand2.use_chain.append(instruction)
 
         return instruction
+    
+    def create_compound_instruction(self, opcode, id, index, value = None):        
+        if self.__base_address is None:
+            self.__base_address = self.create_instruction(opc.const, IR_Memory_Allocation.Base_Address)
+        
+        array_address_ptr = self.create_instruction(opc.add, self.__base_address, self.__current_block.symbol_table[id])
+        array_location = IR_Two_Operand(opc.adda, array_address_ptr, index)
+        instruction = None
+        if opcode == opc.load:
+            instruction = IR_One_Operand(opc.load, array_location)
+        else:
+            instruction = IR_Two_Operand(opc.store, value, array_location)
+        self.__current_block.add_instruction(array_location)
+        self.__current_block.add_instruction(instruction)
+
+        return instruction
+
         

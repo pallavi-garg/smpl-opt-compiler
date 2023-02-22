@@ -16,7 +16,8 @@ class IR:
         self.op_code = op_code
         self.prev_search_ds = None
         self.__container = container
-        self.use_chain = []
+        # collection of instructions where this(self) is used
+        self.use_chain = [] 
 
     def __str__(self):
         return f"({self.instruction_number}) : {self.op_code}"
@@ -70,6 +71,32 @@ class IR_Phi(IR_Two_Operand):
     def __init__(self, operand1, operand2, container = None):
         super().__init__(IR_OP.phi, operand1, operand2, container)
 
+class IR_Memory_Allocation(IR):
+    __current_base_address = 0
+    Base_Address = 255
+    Integer_Size = 4 #bytes
+
+    @staticmethod
+    def get_base_address(size):
+        address = IR_Memory_Allocation.__current_base_address
+        IR_Memory_Allocation.__current_base_address += size
+        return address
+
+    def __init__(self, dimensions, container):
+        super().__init__(IR_OP.malloc, container)
+        size = 1
+        for d in dimensions:
+            size *= d
+        self.mem_size = size * IR_Memory_Allocation.Integer_Size
+        self.dimensions = dimensions
+        self.indexers = [1]
+        for d in reversed(dimensions[1:]):
+            self.indexers.insert(0, self.indexers[0] * d)
+        self.base_address = IR_Memory_Allocation.get_base_address(self.mem_size)
+
+    def __str__(self):
+        return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.base_address)}"
+    
 class IR_OP:
     add = 'add' # add x y       -> x+y
     sub = 'sub' # sub x y       -> x=y
@@ -88,6 +115,7 @@ class IR_OP:
     adda = 'adda'   # adda x,y  -> add two addresses x and y (used with arrays)
     load = 'load'   # load x,y  -> load from memory address y
     store = 'store' # store x,y -> store y to memory x
+    malloc = 'address' # malloc x -> allocate memory of size x
 
     const = 'const' # const x   -> create constant x
     read = 'read' # read        -> for built-in function InputNum()
