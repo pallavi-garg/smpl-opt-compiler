@@ -1,0 +1,35 @@
+main
+var a, b, x, y;
+{
+	let a <- call InputNum();
+	let x <- a + 1;
+	let x <- a + 2;
+	call OutputNum(x);
+	call OutputNum(a);
+	if a<0 then
+		let x <- a + 2;
+		call OutputNum(x);
+		call OutputNum(a);
+		if a<0 then
+			let x <- a + 2;
+			call OutputNum(x);
+			call OutputNum(a);
+		else
+			let x <- a + 3;
+			let x <- a + 99;
+			call OutputNum(x);
+			call OutputNum(a);
+		fi;
+		call OutputNum(x);
+		call OutputNum(a);
+	else
+		call OutputNum(x);
+		call OutputNum(a);
+		let x <- a + 99;
+		call OutputNum(x);
+		call OutputNum(a)
+	fi;
+	
+	call OutputNum(x);
+	call OutputNum(a)
+}.

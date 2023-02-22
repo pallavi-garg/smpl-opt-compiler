@@ -9,7 +9,7 @@ class Dot_Graph:
 
     def get_representation(self, graph):
         for block in graph.get_blocks():
-            self.__traverse_node(block, graph)
+            self.__traverse_node(block)
         representation = "digraph G {\n"
         
         for declaration in self.__declarations:
@@ -25,25 +25,31 @@ class Dot_Graph:
 
         return representation
 
-    def __traverse_node(self, node, graph):
+    def __traverse_node(self, node):
         self.__declarations.append(f"{node} [shape=record, label=\"<b>{node} | {self.__traverse_instructions(node)}\"];")
         fallthrough_label = ""
         if node.branch_block is not None:
-            self.__relations.append(f"{node}:s -> {node.branch_block}:n [label=\"branch\"];")
+            from_block = f"{node}"[2:]
+            to_block = f"{node.branch_block}"[2:]
+            if int(to_block) < int(from_block):
+                self.__relations.append(f"{node}:s -> {node.branch_block}:n [label=\"loop\", color=brown, fontcolor=brown];")
+            else:
+                self.__relations.append(f"{node}:s -> {node.branch_block} [label=\"branch\"];")
             fallthrough_label = f"[label=\"fall-through\"]"
+            
+        if node.get_dominator_block() is not None:
+            self.__relations.append(f"{node.get_dominator_block()}:b -> {node}:b [color=blue, style=dotted, label=\"dom\", fontcolor=blue]")
         
         if node.fall_through_block is not None:
-            self.__relations.append(f"{node}:s -> {node.fall_through_block}:n {fallthrough_label};")
+            self.__relations.append(f"{node}:s -> {node.fall_through_block} {fallthrough_label};")
         
-        if node.get_dominator_block() is not None and node.get_dominator_block() is not graph.get_root():
-            self.__relations.append(f"{node.get_dominator_block()}:b -> {node}:b [color=blue, style=dotted, label=\"dom\"]")
 
     def __traverse_instructions(self, node):
         instructions = "{"
-        if len(node.instructions) == 0:
+        if len(node.get_instructions()) == 0:
             instructions += "\<empty\>"
         else:
-            for instruction in node.instructions:
+            for instruction in node.get_instructions():
                 instructions += f" {instruction} |"
             instructions = instructions.rstrip(instructions[-1])
         instructions += "}"

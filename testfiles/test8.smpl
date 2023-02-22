@@ -1,0 +1,14 @@
+main
+var i, j;
+{
+    let i <- 0;
+    let j <- 0;
+
+
+    while i < 5 do
+        let j <- j + 1;
+        let i <- i + 1;
+    od;
+    call OutputNum(i);
+    call OutputNum(j);
+}.
