@@ -1,4 +1,4 @@
-from .intermediate_representation import IR, IR_One_Operand, IR_Two_Operand, IR_OP as opc, IR_Phi, IR_Memory_Allocation
+from .intermediate_representation import IR, IR_One_Operand, IR_Two_Operand, IR_OP as opc, IR_Phi, IR_Memory_Allocation, IR_Kill
 from .cfg import Control_Flow_Graph, Basic_Block as bb
 from .search_data_structure import search_ds
 
@@ -16,6 +16,7 @@ class SSA_Engine:
         self.__search_ds = search_ds()
         self.__int_size = None
         self.__base_address = None
+        self.__kills = set()
     
     def get_cfg(self):
     # returns cfg
@@ -60,30 +61,11 @@ class SSA_Engine:
     # inserts value of id in symbol table
         self.__current_block.symbol_table[id] = value
 
-    def __get_location(self, id, indices):
-        val = self.__current_block.symbol_table[id]
-        mul = None
-        add = None
-        
-        for index in range(0, len(indices)):
-            index_offset = indices[index] if isinstance(indices[index], IR) else self.create_instruction(opc.const, indices[index])
-            size_offset = self.create_instruction(opc.const, val.indexers[index])
-            mul = self.create_instruction(opc.mul, index_offset, size_offset)
-            if add is not None:
-                add = self.create_instruction(opc.add, add, mul)
-            else:
-                add = mul
-
-        if self.__int_size is None:
-            self.__int_size = self.create_instruction(opc.const, IR_Memory_Allocation.Integer_Size)
-        mul = self.create_instruction(opc.mul, add, self.__int_size)
-        return mul
-
     def get_array_value(self, id, indices):
-        return self.create_compound_instruction(opc.load, id, self.__get_location(id, indices))   
+        return self.create_compound_instruction(opc.load, id, indices)   
 
     def set_array_value(self, id, indices, value):  
-        return self.create_compound_instruction(opc.store, id, self.__get_location(id, indices), value) 
+        return self.create_compound_instruction(opc.store, id, indices, value) 
     
     def split_block(self):
         if len(self.__current_block.get_instructions()) > 0:
@@ -94,11 +76,13 @@ class SSA_Engine:
 
     def update_join_block(self):
         for id in self.__current_block.symbol_table:
-            phi = IR_Phi(self.__current_block.symbol_table[id], None)
-            self.__current_block.add_instruction(phi)
-            self.__current_block.symbol_table[id] = phi
-            if isinstance(phi.operand1, IR):
-                phi.operand1.use_chain.append(phi)
+            val = self.__current_block.symbol_table[id]
+            if isinstance(val, IR_Memory_Allocation) == False:
+                phi = IR_Phi(val, None)
+                self.__current_block.add_instruction(phi)
+                self.__current_block.symbol_table[id] = phi
+                if isinstance(phi.operand1, IR):
+                    phi.operand1.use_chain.append(phi)
 
     def create_control_flow(self, instruction, opcode, use_current_as_join):
     # updates current block based on use_current_as_join
@@ -227,9 +211,15 @@ class SSA_Engine:
                             modified_instructions.append(used)
         
     def __propagate_phi(self, left_block, right_block, join_block, create_new = False):
+        for kill in self.__kills:
+            new_kill = IR_Kill(kill.operand, join_block)
+            join_block.add_instruction(new_kill, 0)
+            self.__search_ds.add(opc.load, new_kill)        
+        self.__kills.clear()
+        
         for id in join_block.symbol_table:
             existing_val = join_block.symbol_table[id]
-            if existing_val is None or create_new or isinstance(existing_val, IR_Phi) == False:
+            if isinstance(existing_val, IR_Memory_Allocation) == False and (existing_val is None or create_new or isinstance(existing_val, IR_Phi) == False):
                 if left_block.symbol_table[id] != right_block.symbol_table[id]:
                     phi = IR_Phi(left_block.symbol_table[id], right_block.symbol_table[id])
                     join_block.add_instruction(phi, 0)
@@ -260,10 +250,12 @@ class SSA_Engine:
 
     def create_instruction(self, opcode, operand1 = None, operand2 = None):
     # creates new instruction or returns previous common sub expression
+        created_new = False
         instruction = self.__search_ds.get(opcode, operand1, operand2, self.__current_block)
                 
         # if not found in search data structure, then create new instruction
         if instruction is None:
+            created_new = True
             if opcode in [opc.add, opc.sub, opc.mul, opc.div, opc.cmp, opc.bne, opc.beq, opc.ble, opc.blt, opc.bge, opc.bgt]:
                 instruction = IR_Two_Operand(opcode, operand1, operand2, self.__current_block)
                 self.__current_block.add_instruction(instruction)
@@ -288,21 +280,66 @@ class SSA_Engine:
             if isinstance(operand2, IR):
                 operand2.use_chain.append(instruction)
 
-        return instruction
-    
-    def create_compound_instruction(self, opcode, id, index, value = None):        
-        if self.__base_address is None:
-            self.__base_address = self.create_instruction(opc.const, IR_Memory_Allocation.Base_Address)
+        return instruction, created_new      
+
+    def __get_location(self, id, indices):
+        val = self.__current_block.symbol_table[id]
+        mul = None
+        add = None
+        location_instructions = []
         
-        array_address_ptr = self.create_instruction(opc.add, self.__base_address, self.__current_block.symbol_table[id])
-        array_location = IR_Two_Operand(opc.adda, array_address_ptr, index)
-        instruction = None
-        if opcode == opc.load:
-            instruction = IR_One_Operand(opc.load, array_location)
+        for index in range(0, len(indices)):
+            if isinstance(indices[index], IR):
+                index_offset = indices[index]  
+            else:
+                index_offset, _ = self.create_instruction(opc.const, indices[index])
+            size_offset, _ = self.create_instruction(opc.const, val.indexers[index])
+            mul, created_new = self.create_instruction(opc.mul, index_offset, size_offset)
+            location_instructions.append((mul, created_new))
+            if add is not None:
+                add, created_new = self.create_instruction(opc.add, add, mul)
+                location_instructions.append((add, created_new))
+            else:
+                add = mul
+
+        if self.__int_size is None:
+            self.__int_size, _ = self.create_instruction(opc.const, IR_Memory_Allocation.Integer_Size)
+        mul, created_new = self.create_instruction(opc.mul, add, self.__int_size)
+        location_instructions.append((mul, created_new))
+        return location_instructions
+    
+    def create_compound_instruction(self, opcode, id, indices, value = None):  
+        temp_instructions = self.__get_location(id, indices)      
+        index, _ = temp_instructions[-1]
+        if self.__base_address is None:
+            self.__base_address, _ = self.create_instruction(opc.const, IR_Memory_Allocation.Base_Address)
+        
+        array_address_ptr, created_new = self.create_instruction(opc.add, self.__base_address, self.__current_block.symbol_table[id])
+        temp_instructions.append((array_address_ptr, created_new))
+
+        array_location = IR_Two_Operand(opc.adda, array_address_ptr, index, self.__current_block)        
+        instruction = self.__search_ds.get_load(opcode, array_address_ptr, index, self.__current_block)
+
+        if instruction is not None:
+            for temp_instruction in temp_instructions:
+                if temp_instruction[1] == True:
+                    self.__current_block.remove_instruction(temp_instruction)
+                    self.__search_ds.delete(temp_instruction)
         else:
-            instruction = IR_Two_Operand(opc.store, value, array_location)
-        self.__current_block.add_instruction(array_location)
-        self.__current_block.add_instruction(instruction)
+            if opcode == opc.load:
+                instruction = IR_One_Operand(opc.load, array_location, self.__current_block)
+            else:
+                instruction = IR_Two_Operand(opc.store, value, array_location, self.__current_block)
+            self.__current_block.add_instruction(array_location)
+            self.__current_block.add_instruction(instruction)
+            self.__search_ds.add(opcode, instruction)
+
+            if opcode == opc.store:
+                kill = IR_Kill(array_location, self.__current_block)
+                self.__current_block.add_instruction(kill)
+                self.__search_ds.add(opc.load, kill)
+                if len(self.__control_flow_main_blocks) > 0:
+                    self.__kills.add(kill)
 
         return instruction
 

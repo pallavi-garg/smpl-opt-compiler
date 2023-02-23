@@ -15,7 +15,10 @@ var a, b, c, d, e;
 	let a <-99;
 	if a<0 then
 		let d<-d+e;
-		let a<-d
+		let a<-d;
+		if a > 35 then
+			let a <- 35*a
+		fi;
 	else 
 		let d<-e
 	fi;

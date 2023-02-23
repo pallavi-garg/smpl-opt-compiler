@@ -23,7 +23,7 @@ class IR:
         return f"({self.instruction_number}) : {self.op_code}"
     
     def format_operand(self, operand):
-        if(isinstance(operand, numbers.Number)):
+        if(isinstance(operand, numbers.Number)) or operand == IR_Memory_Allocation.Base_Address:
             return f"#{operand}"
         elif(isinstance(operand, IR)):
             if operand.op_code == IR_OP.undefined:
@@ -73,7 +73,7 @@ class IR_Phi(IR_Two_Operand):
 
 class IR_Memory_Allocation(IR):
     __current_base_address = 0
-    Base_Address = 255
+    Base_Address = 'BASE'
     Integer_Size = 4 #bytes
 
     @staticmethod
@@ -83,7 +83,7 @@ class IR_Memory_Allocation(IR):
         return address
 
     def __init__(self, dimensions, container):
-        super().__init__(IR_OP.malloc, container)
+        super().__init__(IR_OP.const, container)
         size = 1
         for d in dimensions:
             size *= d
@@ -95,7 +95,14 @@ class IR_Memory_Allocation(IR):
         self.base_address = IR_Memory_Allocation.get_base_address(self.mem_size)
 
     def __str__(self):
-        return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.base_address)}"
+        return f"({self.instruction_number}) : {self.op_code} #addr_{self.base_address}_#{self.mem_size}"
+
+class IR_Kill(IR_One_Operand):
+    def __init__(self, operand, container):
+        super().__init__(IR_OP.kill, operand, container)
+    
+    def __hash__(self) -> int:
+        return self.instruction_number
     
 class IR_OP:
     add = 'add' # add x y       -> x+y
@@ -115,7 +122,6 @@ class IR_OP:
     adda = 'adda'   # adda x,y  -> add two addresses x and y (used with arrays)
     load = 'load'   # load x,y  -> load from memory address y
     store = 'store' # store x,y -> store y to memory x
-    malloc = 'address' # malloc x -> allocate memory of size x
 
     const = 'const' # const x   -> create constant x
     read = 'read' # read        -> for built-in function InputNum()
@@ -124,3 +130,5 @@ class IR_OP:
 
     # DUMMY: do not send this to processor
     undefined = 'undefined' # value = 0, it identifies operands which are uninitialized.
+    kill = 'kill' # kill x -> forget load history of array_id
+    malloc = 'malloc'

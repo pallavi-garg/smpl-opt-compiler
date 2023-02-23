@@ -1,5 +1,7 @@
 main 
-var i, ab; 
+var i,v;
+var ab;
+array[5] at;
 {
 let i <- call InputNum();
 let ab <- 20;

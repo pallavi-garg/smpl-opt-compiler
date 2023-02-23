@@ -162,14 +162,7 @@ class Parser:
             if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.OpenBracket:
                indices = self. __read_indexing()
             self.__consume(Token_Type.Assignment)
-            if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Call:
-                self.__consume(Token_Type.Call)
-                self.__consume(Token_Type.Fn_InputNum)
-                self.__consume(Token_Type.CloseParanthesis)
-                value = self.__ssa.create_instruction(opc.read)
-            else:
-                value = self.__expression()
-            self.__insert_identifier(id, value, indices)
+            self.__insert_identifier(id, self.__expression(), indices)
         else:
             self.__syntax_error("Expected identifier assignment")
 
@@ -184,7 +177,7 @@ class Parser:
     def __array_declaration(self, dimensions):
         # handle variable declaration
         if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Identifier:
-            pointer_val = self.__ssa.create_instruction(opc.malloc, dimensions)
+            pointer_val, _ = self.__ssa.create_instruction(opc.malloc, dimensions)
             self.__insert_identifier(self.__tokenizer.token.id, pointer_val)
             self.__consume(Token_Type.Identifier)
         else:
@@ -198,7 +191,7 @@ class Parser:
             token_type = self.__tokenizer.token.type
             self.__consume(token_type)
             opcode = opc.add if token_type == Token_Type.Plus else opc.sub
-            instruction = self.__ssa.create_instruction(opcode, instruction, self.__term())
+            instruction, _ = self.__ssa.create_instruction(opcode, instruction, self.__term())
         
         return instruction
 
@@ -210,7 +203,7 @@ class Parser:
             token_type = self.__tokenizer.token.type
             self.__consume(token_type)
             opcode = opc.div if token_type == Token_Type.Div else opc.mul
-            instruction = self.__ssa.create_instruction(opcode, instruction, self.__factor())
+            instruction, _ = self.__ssa.create_instruction(opcode, instruction, self.__factor())
 
         return instruction
 
@@ -226,12 +219,17 @@ class Parser:
                 else:
                     self.__syntax_error("Expected ) but not found")
             elif self.__tokenizer.token.type == Token_Type.Number:
-                instruction = self.__ssa.create_instruction(opc.const, self.__tokenizer.token.val)
+                instruction, _ = self.__ssa.create_instruction(opc.const, self.__tokenizer.token.val)
                 self.__consume(Token_Type.Number)
             elif self.__tokenizer.token.type == Token_Type.Identifier:
                 id = self.__tokenizer.token.id
                 self.__consume(Token_Type.Identifier)
                 instruction = self.__look_up(id)
+            elif self.__tokenizer.token.type == Token_Type.Call:
+                self.__consume(Token_Type.Call)
+                self.__consume(Token_Type.Fn_InputNum)
+                self.__consume(Token_Type.CloseParanthesis)
+                instruction, _ = self.__ssa.create_instruction(opc.read)
         else:
             self.__syntax_error("Syntax error in factor")
         return instruction
@@ -258,7 +256,8 @@ class Parser:
             self.__syntax_error("Expected a relational operator.")
         self.__consume(opcode.type)
         op2 = self.__expression()
-        return self.__ssa.create_instruction(opc.cmp, op1, op2), opcode.type
+        instruction, _ = self.__ssa.create_instruction(opc.cmp, op1, op2)
+        return instruction, opcode.type
     
     def __handle_while_statement(self):
         self.__ssa.split_block()
@@ -273,4 +272,4 @@ class Parser:
         self.__ssa.end_loop_control_flow(right_block, join_block)
         
     def __handle_return_statement(self):
-        pass
+        self.__syntax_error("Return statement not supported!")

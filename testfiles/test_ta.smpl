@@ -1,0 +1,27 @@
+main
+array[5] arrA, x;
+var a, i;
+{
+    let a <- 10;
+	let i <- 1;
+	let arrA[i] <- 90;
+	call OutputNum(arrA[i]);
+	let arrA[i] <- 9000;
+	call OutputNum(arrA[i]);
+	if a < 5 then
+		call OutputNum(arrA[i]);
+
+		if a < 7 then
+			call OutputNum(arrA[i]);
+			let arrA[i] <- 190;
+			call OutputNum(arrA[i]);
+
+		fi;
+
+		call OutputNum(arrA[i]);
+	fi;
+	
+		
+	call OutputNum(arrA[i]);
+
+}.
