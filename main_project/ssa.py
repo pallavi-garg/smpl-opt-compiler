@@ -11,7 +11,6 @@ class SSA_Engine:
         self.__current_block = self.__cfg.get_new_block()
         self.__current_block.set_dominator_block(self.__root_block)
         self.__root_block.fall_through_block = self.__current_block
-        self.__nesting_stage = 0
         self.__control_flow_main_blocks = []
         self.__search_ds = search_ds()
         self.__int_size = None
@@ -112,7 +111,6 @@ class SSA_Engine:
     # sets current working block to fall through block
         self.__current_block = self.__current_block.fall_through_block        
         self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
-        self.__nesting_stage += 1
 
     def end_fall_through(self):
     # adds branch instruction if current block is a fall through block. This is done to prevent branch block instructions
@@ -211,12 +209,15 @@ class SSA_Engine:
                             modified_instructions.append(used)
         
     def __propagate_phi(self, left_block, right_block, join_block, create_new = False):
+        
         for kill in self.__kills:
             new_kill = IR_Kill(kill.operand, join_block)
             join_block.add_instruction(new_kill, 0)
-            self.__search_ds.add(opc.load, new_kill)        
-        self.__kills.clear()
+            self.__search_ds.add(opc.load, new_kill)   
         
+        if len(self.__control_flow_main_blocks) == 0:     
+            self.__kills.clear()
+
         for id in join_block.symbol_table:
             existing_val = join_block.symbol_table[id]
             if isinstance(existing_val, IR_Memory_Allocation) == False and (existing_val is None or create_new or isinstance(existing_val, IR_Phi) == False):
