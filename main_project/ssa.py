@@ -4,7 +4,7 @@ from .search_data_structure import search_ds
 
 class SSA_Engine:
     # holds objects required in SSA calculations
-    def __init__(self):
+    def __init__(self, show_kills = False):
         self.uninitialized_instruction = IR_One_Operand(opc.undefined, 0) # 0 is default value of all numbers
         self.__cfg = Control_Flow_Graph()
         self.__root_block = self.__cfg.get_root()
@@ -16,9 +16,18 @@ class SSA_Engine:
         self.__int_size = None
         self.__base_address = None
         self.__kills = set()
+        self.__show_kills = show_kills
     
     def get_cfg(self):
     # returns cfg
+        if self.__show_kills == False:
+            for block in self.__cfg.get_blocks():
+                to_delete = []
+                for instruction in block.get_instructions():
+                    if isinstance(instruction, IR_Kill):
+                        to_delete.append(instruction)
+                for instruction in to_delete:
+                    block.remove_instruction(instruction)
         self.__cfg.clean_up()
         return self.__cfg       
 

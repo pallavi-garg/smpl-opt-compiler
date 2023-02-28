@@ -27,7 +27,7 @@ def compile():
 
     reader = File_Reader(args.file_path)
     
-    p = Parser(reader.get_contents())
+    p = Parser(reader.get_contents(), show_kills = False)
 
     try:
         control_flow_graph = p.parse()
@@ -35,7 +35,7 @@ def compile():
         dot_graph = dot()
         output = dot_graph.get_representation(control_flow_graph)
         print(output)
-        
+
         #Only supported on linux
         copy_clipboard(output)
     

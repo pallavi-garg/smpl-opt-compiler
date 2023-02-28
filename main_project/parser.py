@@ -21,11 +21,11 @@ class Parser:
                             }
     type_declarations = [Token_Type.Array, Token_Type.Var]
 
-    def __init__(self, input_string):
+    def __init__(self, input_string, show_kills = False):
     # constructor initialization
         self.__tokenizer = Tokenizer(input_string)
         self.warnings = []
-        self.__ssa = SSA_Engine()
+        self.__ssa = SSA_Engine(show_kills = show_kills)
 
     def parse(self):
     # entry point for this parser
