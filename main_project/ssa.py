@@ -207,13 +207,22 @@ class SSA_Engine:
                         if used.operand2 == instruction:
                             used.operand2 = original_instruction
                             modified_instructions.append(used)
+
+    def __should_duplicate_kill(self, kill, block):
+        dom = block.get_dominator_block()
+        while dom is not None:
+            if kill in dom.get_instructions():
+                return False
+            dom = dom.get_dominator_block()
+        return True
         
     def __propagate_phi(self, left_block, right_block, join_block, create_new = False):
         
         for kill in self.__kills:
-            new_kill = IR_Kill(kill.operand, join_block)
-            join_block.add_instruction(new_kill, 0)
-            self.__search_ds.add(opc.load, new_kill)   
+            if self.__should_duplicate_kill(kill, join_block):
+                new_kill = IR_Kill(kill.operand, join_block)
+                join_block.add_instruction(new_kill, 0)
+                self.__search_ds.add(opc.load, new_kill)   
         
         if len(self.__control_flow_main_blocks) == 0:     
             self.__kills.clear()

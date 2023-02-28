@@ -1,6 +1,6 @@
 main 
 var x,y,i,j; 
-array[5] arra;
+array[5] arra, b;
 {
     let i<-call InputNum(); 
     let x<-0; 
@@ -22,6 +22,7 @@ array[5] arra;
             if i < 17 then  
                 call OutputNum(arra[1]);
             fi;
+            call OutputNum(arra[1]); 
         od; 
         let i <-i + 1 
     od; 
