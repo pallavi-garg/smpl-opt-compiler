@@ -173,6 +173,11 @@ class SSA_Engine:
             else:
                 right_block = right_block.fall_through_block
         
+        for kill in self.__kills:
+            new_kill = IR_Kill(kill.operand, join_block)
+            join_block.add_instruction(new_kill, 0)
+            self.__search_ds.add(opc.load, new_kill)  
+        
         self.__propagate_phi(left_block, right_block, join_block, True)
     
     def cleanup_phi(self, join_block):
@@ -221,22 +226,8 @@ class SSA_Engine:
                         if used.operand2 == instruction:
                             used.operand2 = original_instruction
                             modified_instructions.append(used)
-
-    def __should_duplicate_kill(self, kill, block):
-        dom = block
-        while dom is not None:
-            if kill in dom.get_instructions():
-                return False
-            dom = dom.get_dominator_block()
-        return True
         
-    def __propagate_phi(self, left_block, right_block, join_block, create_new = False):
-        
-        for kill in self.__kills:
-            if self.__should_duplicate_kill(kill, join_block):
-                new_kill = IR_Kill(kill.operand, join_block)
-                join_block.add_instruction(new_kill, 0)
-                self.__search_ds.add(opc.load, new_kill)   
+    def __propagate_phi(self, left_block, right_block, join_block, create_new = False):  
         
         if len(self.__control_flow_main_blocks) == 0:     
             self.__kills.clear()
@@ -350,11 +341,18 @@ class SSA_Engine:
                     self.__current_block.remove_instruction(temp_instruction)
                     self.__search_ds.delete(temp_instruction)
         else:
-            array_location = IR_Two_Operand(opc.adda, array_address_ptr, index, self.__current_block)        
+            array_location = IR_Two_Operand(opc.adda, array_address_ptr, index, self.__current_block)    
+            array_address_ptr.use_chain.append(array_location)    
+            index.use_chain.append(array_location)
             if opcode == opc.load:
                 instruction = IR_One_Operand(opc.load, array_location, self.__current_block)
+                array_location.use_chain.append(instruction)
             else:
                 instruction = IR_Two_Operand(opc.store, value, array_location, self.__current_block)
+                array_location.use_chain.append(instruction)
+                if isinstance(value, IR):
+                    value.use_chain.append(instruction)
+
             self.__current_block.add_instruction(array_location)
             self.__current_block.add_instruction(instruction)
             self.__search_ds.add(opcode, instruction)

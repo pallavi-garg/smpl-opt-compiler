@@ -116,7 +116,7 @@ class IR_Memory_Allocation(IR):
         self.base_address = IR_Memory_Allocation.get_base_address(self.mem_size)
 
     def __str__(self):
-        return f"({self.instruction_number}) : {self.op_code} #{self.array_name}_addr_{self.base_address}_#{self.mem_size}"
+        return f"({self.instruction_number}) : {self.op_code} #{self.array_name}_#{self.base_address}_#{self.mem_size}"
 
 class IR_Kill(IR_One_Operand):
     def __init__(self, operand, container):

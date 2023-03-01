@@ -80,7 +80,7 @@ class search_ds:
             while(matched is not None):
                 if isinstance(matched, IR_Kill) == False and matched.operand.operand1 == array_address_ptr and matched.operand.operand2 == index and self.__is_dominating(container, matched) == True:
                     break
-                elif isinstance(matched, IR_Kill) and matched.operand == array_instrction:
+                elif isinstance(matched, IR_Kill) and matched.operand == array_instrction and self.__is_dominating(container, matched) == True:
                     matched = None
                     break
                 matched = matched.prev_search_ds
