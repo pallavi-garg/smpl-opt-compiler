@@ -1,0 +1,31 @@
+main 
+var x,y,i,j; 
+array[5] arra, b;
+{
+    let i<-call InputNum(); 
+    let x<-0; 
+    let y<-0; 
+    let j<- i; 
+	let arra[1] <- 100;
+	call OutputNum(arra[1]);
+    while x<10 do
+        let x <- i + 1; 
+        let y <- j + 1; 
+		call OutputNum(arra[1]); 
+		let arra[1] <- 110;
+		call OutputNum(arra[1]); 
+        while x<6 do
+		    call OutputNum(arra[1]); 
+		    let arra[1] <- 11099;
+		    call OutputNum(arra[1]); 
+            let i <-i + 1;
+            if i < 17 then  
+                call OutputNum(arra[1]);
+            fi;
+            call OutputNum(arra[1]); 
+        od; 
+        let i <-i + 1 
+    od; 
+    call OutputNum(x);
+	call OutputNum(arra[1]);
+}.

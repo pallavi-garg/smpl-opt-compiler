@@ -18,6 +18,7 @@ class IR:
         self.__container = container
         # collection of instructions where this(self) is used
         self.use_chain = [] 
+        self.eliminated = False
 
     def __str__(self):
         return f"({self.instruction_number}) : {self.op_code}"
@@ -41,6 +42,9 @@ class IR:
     def get_container(self):
         return self.__container
     
+    def __hash__(self) -> int:
+        return self.instruction_number
+    
 class IR_One_Operand(IR):
 # Intermediate Representation with 1 operand
     def __init__(self, op_code, operand, container = None):
@@ -52,6 +56,9 @@ class IR_One_Operand(IR):
     
     def __eq__(self, other) -> bool:
         return isinstance(other, IR_One_Operand) and f"{self}" == f"{other}"
+
+    def __hash__(self) -> int:
+        return self.instruction_number
 
 class IR_Two_Operand(IR):
 # Intermediate Representation with 2 operands
@@ -65,11 +72,24 @@ class IR_Two_Operand(IR):
 
     def __eq__(self, other) -> bool:
         return isinstance(other, IR_Two_Operand) and f"{self}" == f"{other}"
+
+    def __hash__(self) -> int:
+        return self.instruction_number
     
 class IR_Phi(IR_Two_Operand):
 # Intermediate Representation with 2 operands
-    def __init__(self, operand1, operand2, container = None):
+    def __init__(self, operand1, operand2, container = None, var = None):
         super().__init__(IR_OP.phi, operand1, operand2, container)
+        self.var = var
+    
+    def __hash__(self) -> int:
+        return self.instruction_number
+
+    def __str__(self):
+        s = f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.operand1)}, {self.format_operand(self.operand2)}"
+        if self.var is not None:
+            s = s + f' --- {self.var}'
+        return s
 
 class IR_Memory_Allocation(IR):
     __current_base_address = 0
@@ -82,9 +102,10 @@ class IR_Memory_Allocation(IR):
         IR_Memory_Allocation.__current_base_address += size
         return address
 
-    def __init__(self, dimensions, container):
+    def __init__(self, dimensions, array_name, container):
         super().__init__(IR_OP.const, container)
         size = 1
+        self.array_name = array_name
         for d in dimensions:
             size *= d
         self.mem_size = size * IR_Memory_Allocation.Integer_Size
@@ -95,12 +116,12 @@ class IR_Memory_Allocation(IR):
         self.base_address = IR_Memory_Allocation.get_base_address(self.mem_size)
 
     def __str__(self):
-        return f"({self.instruction_number}) : {self.op_code} #addr_{self.base_address}_#{self.mem_size}"
+        return f"({self.instruction_number}) : {self.op_code} #{self.array_name}_addr_{self.base_address}_#{self.mem_size}"
 
 class IR_Kill(IR_One_Operand):
     def __init__(self, operand, container):
         super().__init__(IR_OP.kill, operand, container)
-    
+
     def __hash__(self) -> int:
         return self.instruction_number
     

@@ -50,7 +50,11 @@ class Dot_Graph:
             instructions += "\<empty\>"
         else:
             for instruction in node.get_instructions():
-                instructions += f" {instruction} |"
+                inst = f"{instruction}"
+                if instruction.eliminated:
+                    instructions += f" {inst} -DCE |"
+                else:
+                    instructions += f" {inst} |"
             instructions = instructions.rstrip(instructions[-1])
         instructions += "}"
         return instructions

@@ -3,7 +3,7 @@ from main_project.parser import Parser
 from main_project.file_reader import File_Reader
 import argparse
 from main_project.dot_graph import Dot_Graph as dot
-
+from main_project.dead_code_emilinator import DE_Eliminator
 from subprocess import Popen, PIPE
 
 def copy_clipboard(msg):
@@ -20,17 +20,21 @@ def print_warnings(parser):
         print("---------------------\n")
 
 def compile():
-    
+    '''
     arg_parser = argparse.ArgumentParser(description="Compiles code of smpl language.")
     arg_parser.add_argument("file_path", help="Path of the file to compile.")
     args = arg_parser.parse_args()
 
     reader = File_Reader(args.file_path)
-    
-    p = Parser(reader.get_contents(), show_kills = False)
+    '''
+    reader = File_Reader('/home/pallavi/workspace/Compiler/Compiler-Py/smpl-opt-compiler/testfiles/test.smpl')
+    p = Parser(reader.get_contents())
 
     try:
         control_flow_graph = p.parse()
+        de_eliminator = DE_Eliminator()
+        de_eliminator.eliminate(control_flow_graph)
+
         print_warnings(p)
         dot_graph = dot()
         output = dot_graph.get_representation(control_flow_graph)

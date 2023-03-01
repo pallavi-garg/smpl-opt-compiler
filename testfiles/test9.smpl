@@ -13,7 +13,4 @@ var i, x, y, j;
         let i <- i + 1
     od;
     call OutputNum(i);
-    call OutputNum(x);
-    call OutputNum(j);
-    call OutputNum(y)
-}.
+    call OutputNum(x);}.

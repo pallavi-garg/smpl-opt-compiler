@@ -73,14 +73,15 @@ class search_ds:
                 dom = dom.get_dominator_block()
         return False
 
-    def get_load(self, opcode, array_address_ptr, index, container):
+    def get_load(self, opcode, array_instrction, array_address_ptr, index, container):
         matched = None
         if opcode in self.__map:
             matched = self.__map[opcode]
             while(matched is not None):
-                if matched.operand.operand1 == array_address_ptr and matched.operand.operand2 == index and self.__is_dominating(container, matched) == True:
-                    if isinstance(matched, IR_Kill):
-                        matched = None
+                if isinstance(matched, IR_Kill) == False and matched.operand.operand1 == array_address_ptr and matched.operand.operand2 == index and self.__is_dominating(container, matched) == True:
+                    break
+                elif isinstance(matched, IR_Kill) and matched.operand == array_instrction:
+                    matched = None
                     break
                 matched = matched.prev_search_ds
         return matched

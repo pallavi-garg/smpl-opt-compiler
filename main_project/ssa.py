@@ -4,11 +4,13 @@ from .search_data_structure import search_ds
 
 class SSA_Engine:
     # holds objects required in SSA calculations
-    def __init__(self, show_kills = False):
+    def __init__(self):
         self.uninitialized_instruction = IR_One_Operand(opc.undefined, 0) # 0 is default value of all numbers
         self.__cfg = Control_Flow_Graph()
         self.__root_block = self.__cfg.get_root()
+        self.__root_block.processing_started()
         self.__current_block = self.__cfg.get_new_block()
+        self.__current_block.processing_started()
         self.__current_block.set_dominator_block(self.__root_block)
         self.__root_block.fall_through_block = self.__current_block
         self.__control_flow_main_blocks = []
@@ -16,19 +18,14 @@ class SSA_Engine:
         self.__int_size = None
         self.__base_address = None
         self.__kills = set()
-        self.__show_kills = show_kills
     
     def get_cfg(self):
-    # returns cfg
-        if self.__show_kills == False:
-            for block in self.__cfg.get_blocks():
-                to_delete = []
-                for instruction in block.get_instructions():
-                    if isinstance(instruction, IR_Kill):
-                        to_delete.append(instruction)
-                for instruction in to_delete:
-                    block.remove_instruction(instruction)
+    # returns cfg        
         self.__cfg.clean_up()
+        self.__search_ds = None 
+
+        self.__cfg.print()      
+
         return self.__cfg       
 
     def is_indentifier_uninitialized(self, id):
@@ -79,14 +76,19 @@ class SSA_Engine:
         if len(self.__current_block.get_instructions()) > 0:
             prev = self.__current_block
             self.__current_block = self.__cfg.get_new_block()
+            self.__current_block.processing_started()
             self.__current_block.set_dominator_block(prev)
             prev.fall_through_block = self.__current_block
 
     def update_join_block(self):
         for id in self.__current_block.symbol_table:
             val = self.__current_block.symbol_table[id]
-            if isinstance(val, IR_Memory_Allocation) == False:
-                phi = IR_Phi(val, None)
+            if isinstance(val, IR_Memory_Allocation) == True:
+                kill = IR_Kill(val, self.__current_block)
+                self.__current_block.add_instruction(kill)
+                self.__search_ds.add(opc.load, kill)
+            else:
+                phi = IR_Phi(val, None, var = id)
                 self.__current_block.add_instruction(phi)
                 self.__current_block.symbol_table[id] = phi
                 if isinstance(phi.operand1, IR):
@@ -120,6 +122,7 @@ class SSA_Engine:
     # sets current working block to fall through block
         self.__current_block = self.__current_block.fall_through_block        
         self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
+        self.__current_block.processing_started()
 
     def end_fall_through(self):
     # adds branch instruction if current block is a fall through block. This is done to prevent branch block instructions
@@ -138,6 +141,7 @@ class SSA_Engine:
         self.__control_flow_main_blocks.append(main_block) #append main_block as it has not ended yet
 
         self.__current_block = main_block.branch_block
+        self.__current_block.processing_started()
 
         if prev_current != self.__current_block.get_dominator_block().fall_through_block:
             prev_current.fall_through_block = self.__current_block.join_block
@@ -152,6 +156,7 @@ class SSA_Engine:
             join_block = main_block.fall_through_block.join_block
             self.__current_block.fall_through_block = join_block
         self.__current_block = join_block
+        self.__current_block.processing_started()
 
     def end_control_flow(self, left, right, join_block):
         self.__control_flow_main_blocks.pop()
@@ -218,7 +223,7 @@ class SSA_Engine:
                             modified_instructions.append(used)
 
     def __should_duplicate_kill(self, kill, block):
-        dom = block.get_dominator_block()
+        dom = block
         while dom is not None:
             if kill in dom.get_instructions():
                 return False
@@ -240,7 +245,7 @@ class SSA_Engine:
             existing_val = join_block.symbol_table[id]
             if isinstance(existing_val, IR_Memory_Allocation) == False and (existing_val is None or create_new or isinstance(existing_val, IR_Phi) == False):
                 if left_block.symbol_table[id] != right_block.symbol_table[id]:
-                    phi = IR_Phi(left_block.symbol_table[id], right_block.symbol_table[id])
+                    phi = IR_Phi(left_block.symbol_table[id], right_block.symbol_table[id], id)
                     join_block.add_instruction(phi, 0)
                     join_block.symbol_table[id] = phi
                     if isinstance(phi.operand1, IR):
@@ -265,6 +270,7 @@ class SSA_Engine:
         self.cleanup_phi(join_block)
 
         self.__current_block = right
+        self.__current_block.processing_started()
         self.__current_block.symbol_table = join_block.symbol_table
 
     def create_instruction(self, opcode, operand1 = None, operand2 = None):
@@ -288,7 +294,7 @@ class SSA_Engine:
                 instruction = IR_One_Operand(opcode, operand1, self.__root_block)
                 self.__root_block.add_instruction(instruction)
             elif opcode == opc.malloc:
-                instruction = IR_Memory_Allocation(operand1, self.__root_block)
+                instruction = IR_Memory_Allocation(operand1, operand2, self.__root_block)
                 self.__root_block.add_instruction(instruction)
             else:
                 raise Exception(f"Unknown command '{opcode}'!")
@@ -336,8 +342,7 @@ class SSA_Engine:
         array_address_ptr, created_new = self.create_instruction(opc.add, self.__base_address, self.__current_block.symbol_table[id])
         temp_instructions.append((array_address_ptr, created_new))
 
-        array_location = IR_Two_Operand(opc.adda, array_address_ptr, index, self.__current_block)        
-        instruction = self.__search_ds.get_load(opcode, array_address_ptr, index, self.__current_block)
+        instruction = self.__search_ds.get_load(opcode, self.__current_block.symbol_table[id], array_address_ptr, index, self.__current_block)
 
         if instruction is not None:
             for temp_instruction in temp_instructions:
@@ -345,6 +350,7 @@ class SSA_Engine:
                     self.__current_block.remove_instruction(temp_instruction)
                     self.__search_ds.delete(temp_instruction)
         else:
+            array_location = IR_Two_Operand(opc.adda, array_address_ptr, index, self.__current_block)        
             if opcode == opc.load:
                 instruction = IR_One_Operand(opc.load, array_location, self.__current_block)
             else:
@@ -354,7 +360,7 @@ class SSA_Engine:
             self.__search_ds.add(opcode, instruction)
 
             if opcode == opc.store:
-                kill = IR_Kill(array_location, self.__current_block)
+                kill = IR_Kill(self.__current_block.symbol_table[id], self.__current_block)
                 self.__current_block.add_instruction(kill)
                 self.__search_ds.add(opc.load, kill)
                 if len(self.__control_flow_main_blocks) > 0:

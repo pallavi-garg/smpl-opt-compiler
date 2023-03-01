@@ -21,11 +21,11 @@ class Parser:
                             }
     type_declarations = [Token_Type.Array, Token_Type.Var]
 
-    def __init__(self, input_string, show_kills = False):
+    def __init__(self, input_string):
     # constructor initialization
         self.__tokenizer = Tokenizer(input_string)
         self.warnings = []
-        self.__ssa = SSA_Engine(show_kills = show_kills)
+        self.__ssa = SSA_Engine()
 
     def parse(self):
     # entry point for this parser
@@ -177,7 +177,7 @@ class Parser:
     def __array_declaration(self, dimensions):
         # handle variable declaration
         if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Identifier:
-            pointer_val, _ = self.__ssa.create_instruction(opc.malloc, dimensions)
+            pointer_val, _ = self.__ssa.create_instruction(opc.malloc, dimensions, self.__tokenizer.token.id)
             self.__insert_identifier(self.__tokenizer.token.id, pointer_val)
             self.__consume(Token_Type.Identifier)
         else:
@@ -250,12 +250,23 @@ class Parser:
         self.__ssa.end_control_flow(left_block, right_block, join_block)
                 
     def __handle_relation(self):
+        while self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.OpenParanthesis:
+            self.__consume(Token_Type.OpenParanthesis)
         op1 = self.__expression()
+        while self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.CloseParanthesis:
+            self.__consume(Token_Type.CloseParanthesis)
+
         opcode = self.__tokenizer.token
         if opcode.type not in self.relational_operators:
             self.__syntax_error("Expected a relational operator.")
         self.__consume(opcode.type)
+
+        while self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.OpenParanthesis:
+            self.__consume(Token_Type.OpenParanthesis)
         op2 = self.__expression()
+        while self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.CloseParanthesis:
+            self.__consume(Token_Type.CloseParanthesis)
+        
         instruction, _ = self.__ssa.create_instruction(opc.cmp, op1, op2)
         return instruction, opcode.type
     
