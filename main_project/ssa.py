@@ -14,7 +14,6 @@ class SSA_Engine:
         self.__current_block.set_dominator_block(self.__root_block)
         self.__root_block.fall_through_block = self.__current_block
         self.__control_flow_main_blocks = []
-        self.__join_blocks = []
         self.__search_ds = search_ds()
         self.__int_size = None
         self.__base_address = None
@@ -120,7 +119,6 @@ class SSA_Engine:
         
         self.__current_block.fall_through_block.join_block = join_block
         self.create_instruction(opcode, instruction, self.__current_block.branch_block)
-        self.__join_blocks.append(join_block)
         return self.__current_block.fall_through_block, self.__current_block.branch_block, join_block
 
     def processing_fall_through(self):
@@ -165,7 +163,6 @@ class SSA_Engine:
 
     def end_control_flow(self, left, right, join_block):
         self.__control_flow_main_blocks.pop()
-        self.__join_blocks.pop()
         left_block = left
         right_block = right
         while(left_block.fall_through_block != join_block):
@@ -278,7 +275,6 @@ class SSA_Engine:
 
     def end_loop_control_flow(self, right, join_block):
         self.__control_flow_main_blocks.pop()
-        self.__join_blocks.pop()
         self.__current_block.branch_block = join_block
 
         self.__propagate_kill_loop(join_block)
@@ -398,22 +394,7 @@ class SSA_Engine:
                 #add kill in join block
                 if len(self.__control_flow_main_blocks) > 0:
                     self.__killed_arrays.add(kill.operand)
-                    '''
-                    join_block = self.__join_blocks[-1]
-                    if self.__get_kill_instruction(join_block, ssa_val) is None: 
-                        kill = IR_Kill(ssa_val, join_block)
-                        join_block.add_instruction(kill, 0)
-                        self.__search_ds.add(opc.load, kill)
-                    '''
 
         return instruction
-    
-    def __get_kill_instruction(self, block, array):
-        kill = None
-        for instruction in block.get_instructions():
-            if isinstance(instruction, IR_Kill) and instruction.operand == array:
-                kill = instruction
-                break
-        return kill
 
         
