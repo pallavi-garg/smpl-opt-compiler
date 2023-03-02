@@ -119,9 +119,31 @@ class IR_Memory_Allocation(IR):
         return f"({self.instruction_number}) : {self.op_code} #{self.array_name}_#{self.base_address}_#{self.mem_size}"
 
 class IR_Kill(IR_One_Operand):
+
     def __init__(self, operand, container):
         super().__init__(IR_OP.kill, operand, container)
+        self.loads = []
 
+    def made_load(self, load):
+        self.loads.append(load)
+
+    def __hash__(self) -> int:
+        return self.instruction_number
+    
+class IR_Load(IR_One_Operand):
+    def __init__(self, operand, prev_load, container = None):
+        super().__init__(IR_OP.load, operand, container)
+        self.prev_load = prev_load
+    
+    def __hash__(self) -> int:
+        return self.instruction_number
+    
+class IR_Store(IR_Two_Operand):
+
+    def __init__(self, operand1, operand2, container = None, var = None):
+        super().__init__(IR_OP.store, operand1, operand2, container)
+        self.var = var
+    
     def __hash__(self) -> int:
         return self.instruction_number
     

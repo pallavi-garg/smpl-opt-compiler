@@ -1,4 +1,4 @@
-from .intermediate_representation import IR_OP as opc, IR_One_Operand, IR_Two_Operand, IR_Kill
+from .intermediate_representation import IR_OP as opc, IR_One_Operand, IR_Two_Operand, IR_Kill, IR_Store
 
 class search_ds:
     
@@ -75,15 +75,21 @@ class search_ds:
                 dom = dom.get_dominator_block()
         return False
 
-    def get_load(self, opcode, array_instrction, array_address_ptr, index, container):
+    def get_load(self, opcode, array_instruction, array_address_ptr, index, container, min_ir_num = None):
         matched = None
+        kill = None
         if opcode in self.__map:
             matched = self.__map[opcode]
             while(matched is not None):
-                if isinstance(matched, IR_Kill) == False and matched.operand.operand1 == array_address_ptr and matched.operand.operand2 == index and self.__is_dominating(container, matched) == True:
+                if min_ir_num is not None and matched.instruction_number >= min_ir_num:
+                    pass
+                elif matched.op_code == opc.load and matched.operand.operand1 == array_address_ptr and matched.operand.operand2 == index and self.__is_dominating(container, matched) == True:
                     break
-                elif isinstance(matched, IR_Kill) and matched.operand == array_instrction and self.__is_dominating(container, matched) == True:
+                elif isinstance(matched, IR_Kill) and matched.operand == array_instruction and self.__is_dominating(container, matched) == True:
+                    if kill is None:
+                        kill = matched
+                elif isinstance(matched, IR_Store) and matched.var == array_instruction:
                     matched = None
                     break
                 matched = matched.prev_search_ds
-        return matched
+        return matched, kill

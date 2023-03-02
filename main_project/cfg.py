@@ -81,6 +81,7 @@ class Basic_Block:
         self.symbol_table = {}
         self.set_dominator_block(dominant_block)
         self.processing_order = None
+        self.killed_arrays = set()
 
     def __eq__(self, other):
         return isinstance(other, Basic_Block) and self.__name == other.__name

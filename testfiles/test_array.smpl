@@ -1,0 +1,17 @@
+main 
+var x,y,i,j; 
+array[4] a; 
+{
+    let i<-call InputNum(); 
+    let x<-0; 
+    let y<-0; 
+    let j<-i; 
+    let a[x] <- i; 
+    while a[x]<10 do 
+        let j <- i + 1; 
+        let a[x] <- a[x] + 1; 
+        let i <-i + 1 
+    od; 
+    call OutputNum(j); 
+    call OutputNum(a[x])
+}.
