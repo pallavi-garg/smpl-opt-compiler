@@ -49,11 +49,13 @@ class search_ds:
                 matched = matched.prev_search_ds
         return matched
 
-    def delete(self, instruction):
-        if instruction.op_code in self.__map:
-            curr = self.__map[instruction.op_code]
+    def delete(self, instruction, opcode = None):
+        if opcode is None:
+            opcode = instruction.op_code
+        if opcode in self.__map:
+            curr = self.__map[opcode]
             if curr is not None and curr == instruction:
-                self.__map[instruction.op_code] = curr.prev_search_ds
+                self.__map[opcode] = curr.prev_search_ds
             elif curr is not None:
                 prev = curr
                 while curr != instruction and curr is not None:

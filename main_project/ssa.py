@@ -14,10 +14,12 @@ class SSA_Engine:
         self.__current_block.set_dominator_block(self.__root_block)
         self.__root_block.fall_through_block = self.__current_block
         self.__control_flow_main_blocks = []
+        self.__join_blocks = []
         self.__search_ds = search_ds()
         self.__int_size = None
         self.__base_address = None
-        self.__kills = set()
+        self.__referenced_arrays = set()
+        self.__killed_arrays = set()
     
     def get_cfg(self):
     # returns cfg        
@@ -83,10 +85,12 @@ class SSA_Engine:
     def update_join_block(self):
         for id in self.__current_block.symbol_table:
             val = self.__current_block.symbol_table[id]
+            
             if isinstance(val, IR_Memory_Allocation) == True:
                 kill = IR_Kill(val, self.__current_block)
                 self.__current_block.add_instruction(kill)
                 self.__search_ds.add(opc.load, kill)
+            
             else:
                 phi = IR_Phi(val, None, var = id)
                 self.__current_block.add_instruction(phi)
@@ -116,6 +120,7 @@ class SSA_Engine:
         
         self.__current_block.fall_through_block.join_block = join_block
         self.create_instruction(opcode, instruction, self.__current_block.branch_block)
+        self.__join_blocks.append(join_block)
         return self.__current_block.fall_through_block, self.__current_block.branch_block, join_block
 
     def processing_fall_through(self):
@@ -160,6 +165,7 @@ class SSA_Engine:
 
     def end_control_flow(self, left, right, join_block):
         self.__control_flow_main_blocks.pop()
+        self.__join_blocks.pop()
         left_block = left
         right_block = right
         while(left_block.fall_through_block != join_block):
@@ -173,14 +179,18 @@ class SSA_Engine:
             else:
                 right_block = right_block.fall_through_block
         
-        for kill in self.__kills:
-            new_kill = IR_Kill(kill.operand, join_block)
+        for array in self.__killed_arrays:
+            new_kill = IR_Kill(array, join_block)
             join_block.add_instruction(new_kill, 0)
-            self.__search_ds.add(opc.load, new_kill)  
+            self.__search_ds.add(opc.load, new_kill)
         
+        if len(self.__control_flow_main_blocks) == 0:     
+            self.__referenced_arrays.clear()
+            self.__killed_arrays.clear()
+            
         self.__propagate_phi(left_block, right_block, join_block, True)
     
-    def cleanup_phi(self, join_block):
+    def __cleanup_phi(self, join_block):
         to_delete = []
         modified = []
         for phi_instruction in join_block.get_instructions():
@@ -228,9 +238,6 @@ class SSA_Engine:
                             modified_instructions.append(used)
         
     def __propagate_phi(self, left_block, right_block, join_block, create_new = False):  
-        
-        if len(self.__control_flow_main_blocks) == 0:     
-            self.__kills.clear()
 
         for id in join_block.symbol_table:
             existing_val = join_block.symbol_table[id]
@@ -253,12 +260,30 @@ class SSA_Engine:
                 if existing_val.operand2:
                     existing_val.operand2.use_chain.append(existing_val)
 
+    def __propagate_kill_loop(self, join_block):
+        to_delete = []
+        for instruction in join_block.get_instructions():
+            if isinstance(instruction, IR_Kill):
+                if instruction.operand not in self.__referenced_arrays:
+                    to_delete.append(instruction)
+                else:
+                    self.__killed_arrays.add(instruction.operand)
+        for instruction in to_delete:
+            join_block.remove_instruction(instruction)
+            self.__search_ds.delete(instruction, opc.load)
+
+        if len(self.__control_flow_main_blocks) == 0:
+            self.__killed_arrays.clear()
+            self.__referenced_arrays.clear()
+
     def end_loop_control_flow(self, right, join_block):
         self.__control_flow_main_blocks.pop()
+        self.__join_blocks.pop()
         self.__current_block.branch_block = join_block
 
+        self.__propagate_kill_loop(join_block)
         self.__propagate_phi(join_block, self.__current_block, join_block)
-        self.cleanup_phi(join_block)
+        self.__cleanup_phi(join_block)
 
         self.__current_block = right
         self.__current_block.processing_started()
@@ -304,19 +329,22 @@ class SSA_Engine:
         add = None
         location_instructions = []
         
-        for index in range(0, len(indices)):
-            if isinstance(indices[index], IR):
-                index_offset = indices[index]  
-            else:
-                index_offset, _ = self.create_instruction(opc.const, indices[index])
-            size_offset, _ = self.create_instruction(opc.const, val.indexers[index])
-            mul, created_new = self.create_instruction(opc.mul, index_offset, size_offset)
-            location_instructions.append((mul, created_new))
-            if add is not None:
-                add, created_new = self.create_instruction(opc.add, add, mul)
-                location_instructions.append((add, created_new))
-            else:
-                add = mul
+        if len(indices) > 1:
+            for index in range(0, len(indices)):
+                if isinstance(indices[index], IR):
+                    index_offset = indices[index]  
+                else:
+                    index_offset, _ = self.create_instruction(opc.const, indices[index])
+                size_offset, _ = self.create_instruction(opc.const, val.indexers[index])
+                mul, created_new = self.create_instruction(opc.mul, index_offset, size_offset)
+                location_instructions.append((mul, created_new))
+                if add is not None:
+                    add, created_new = self.create_instruction(opc.add, add, mul)
+                    location_instructions.append((add, created_new))
+                else:
+                    add = mul
+        else:
+            add = indices[0]
 
         if self.__int_size is None:
             self.__int_size, _ = self.create_instruction(opc.const, IR_Memory_Allocation.Integer_Size)
@@ -324,16 +352,22 @@ class SSA_Engine:
         location_instructions.append((mul, created_new))
         return location_instructions
     
-    def create_compound_instruction(self, opcode, id, indices, value = None):  
+    def create_compound_instruction(self, opcode, id, indices, value = None): 
+        
+        ssa_val = self.__current_block.symbol_table[id]
+        
+        if len(self.__control_flow_main_blocks) > 0:
+            self.__referenced_arrays.add(ssa_val)
+
         temp_instructions = self.__get_location(id, indices)      
         index, _ = temp_instructions[-1]
         if self.__base_address is None:
             self.__base_address, _ = self.create_instruction(opc.const, IR_Memory_Allocation.Base_Address)
         
-        array_address_ptr, created_new = self.create_instruction(opc.add, self.__base_address, self.__current_block.symbol_table[id])
+        array_address_ptr, created_new = self.create_instruction(opc.add, self.__base_address, ssa_val)
         temp_instructions.append((array_address_ptr, created_new))
 
-        instruction = self.__search_ds.get_load(opcode, self.__current_block.symbol_table[id], array_address_ptr, index, self.__current_block)
+        instruction = self.__search_ds.get_load(opcode, ssa_val, array_address_ptr, index, self.__current_block)
 
         if instruction is not None:
             for temp_instruction in temp_instructions:
@@ -358,12 +392,28 @@ class SSA_Engine:
             self.__search_ds.add(opcode, instruction)
 
             if opcode == opc.store:
-                kill = IR_Kill(self.__current_block.symbol_table[id], self.__current_block)
+                kill = IR_Kill(ssa_val, self.__current_block)
                 self.__current_block.add_instruction(kill)
                 self.__search_ds.add(opc.load, kill)
+                #add kill in join block
                 if len(self.__control_flow_main_blocks) > 0:
-                    self.__kills.add(kill)
+                    self.__killed_arrays.add(kill.operand)
+                    '''
+                    join_block = self.__join_blocks[-1]
+                    if self.__get_kill_instruction(join_block, ssa_val) is None: 
+                        kill = IR_Kill(ssa_val, join_block)
+                        join_block.add_instruction(kill, 0)
+                        self.__search_ds.add(opc.load, kill)
+                    '''
 
         return instruction
+    
+    def __get_kill_instruction(self, block, array):
+        kill = None
+        for instruction in block.get_instructions():
+            if isinstance(instruction, IR_Kill) and instruction.operand == array:
+                kill = instruction
+                break
+        return kill
 
         
