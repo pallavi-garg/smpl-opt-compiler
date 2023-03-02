@@ -9,7 +9,10 @@ class Token:
         # type is Token_Type
         self.type = token_type
         match token_type:
-            case Token_Type.Identifier:
+            case Token_Type.Identifier | \
+                 Token_Type.Fn_OutputNum | \
+                 Token_Type.Fn_InputNum | \
+                 Token_Type.Fn_OutputNewLine:
                 self.id = val
             case Token_Type.Number:
                 self.val = int(val)
@@ -17,7 +20,10 @@ class Token:
     def get_length(self):
         # returns length of token string
         match self.type:
-            case Token_Type.Identifier:
+            case Token_Type.Identifier | \
+                 Token_Type.Fn_OutputNum | \
+                 Token_Type.Fn_InputNum | \
+                 Token_Type.Fn_OutputNewLine:
                 return len(self.id)
             case Token_Type.Number:
                 return len(str(self.val))
