@@ -88,7 +88,7 @@ class search_ds:
                 elif isinstance(matched, IR_Kill) and matched.operand == array_instruction and self.__is_dominating(container, matched) == True:
                     if kill is None:
                         kill = matched
-                elif isinstance(matched, IR_Store) and matched.var == array_instruction:
+                elif isinstance(matched, IR_Store) and matched.var == array_instruction and self.__is_dominating(container, matched) == True:
                     matched = None
                     break
                 matched = matched.prev_search_ds

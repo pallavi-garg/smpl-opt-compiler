@@ -184,6 +184,10 @@ class SSA_Engine:
             new_kill = IR_Kill(array, join_block)
             join_block.add_instruction(new_kill, 0)
             self.__search_ds.add(opc.load, new_kill)
+            if len(self.__all_join_blocks) > 0:
+                    self.__all_join_blocks[-1].killed_arrays.add(new_kill.operand)
+            if len(self.__only_while_join_blocks) > 0:
+                self.__only_while_join_blocks[-1].killed_arrays.add(new_kill.operand)
         
         join_block.killed_arrays.clear()
             
@@ -265,10 +269,11 @@ class SSA_Engine:
             if isinstance(instruction, IR_Kill):
                 if instruction.operand not in join_block.killed_arrays:
                     to_delete.append(instruction)
-                elif len(self.__all_join_blocks) > 0:
-                    self.__all_join_blocks[-1].killed_arrays.add(instruction.operand)
-                elif len(self.__only_while_join_blocks) > 0:
-                    self.__only_while_join_blocks[-1].killed_arrays.add(instruction.operand)
+                else:
+                    if len(self.__all_join_blocks) > 0:
+                        self.__all_join_blocks[-1].killed_arrays.add(instruction.operand)
+                    if len(self.__only_while_join_blocks) > 0:
+                        self.__only_while_join_blocks[-1].killed_arrays.add(instruction.operand)
         
         for kill in to_delete:           
             join_block.remove_instruction(kill)
