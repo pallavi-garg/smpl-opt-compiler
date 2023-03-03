@@ -211,6 +211,10 @@ class SSA_Engine:
                                 instruction.operand2 = phi_instruction.operand1
                                 modified.append(instruction)
                     to_delete.append(phi_instruction)
+                ''' DONOT do this as this phi could have a use at end of the program for variable w - test_while_1.smpl
+                elif len(phi_instruction.use_chain) == 0:
+                    to_delete.append(phi_instruction)
+                '''
         for id in join_block.symbol_table:
             if join_block.symbol_table[id] in to_delete:
                 join_block.symbol_table[id] = join_block.symbol_table[id].operand1
