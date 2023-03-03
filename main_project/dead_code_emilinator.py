@@ -14,29 +14,40 @@ class DE_Eliminator:
 
     def eliminate(self, graph):
         ordered_blocks = graph.sort_blocks()
+        iteration = 10
 
-        usage = set()
-        to_delete = []
+        while iteration > 0:
+            iteration -= 1
+            to_delete = set()
+            usage = set()
+            for block in ordered_blocks:
+                for instruction in reversed(block.get_instructions()):
+                    if instruction.eliminated == False:
+                        if self.__can_elimintate(instruction) and instruction not in usage:
+                            to_delete.add(instruction)
 
-        for block in ordered_blocks:
-            for instruction in reversed(block.get_instructions()):
-                if self.__can_elimintate(instruction) and instruction not in usage:
-                    to_delete.append(instruction)
-
-                if isinstance(instruction, IR_Kill) == False:
-                    if instruction in usage:
-                        usage.remove(instruction)
-                        if instruction in to_delete:
-                            to_delete.remove(instruction)
-                    if isinstance(instruction, IR_One_Operand) and isinstance(instruction.operand, IR):
-                        usage.add(instruction.operand)
-                    elif isinstance(instruction, IR_Two_Operand):
-                        if isinstance(instruction.operand1, IR):
-                            usage.add(instruction.operand1)
-                        if isinstance(instruction.operand2, IR):
-                            usage.add(instruction.operand2)
-
-        for instruction in to_delete:
-            if instruction not in usage:
-                instruction.eliminated = True
-                #instruction.get_container().remove_instruction(instruction)
+                        if isinstance(instruction, IR_Kill) == False:
+                            if instruction in usage and instruction in to_delete:
+                                to_delete.remove(instruction)
+                            if isinstance(instruction, IR_One_Operand) and isinstance(instruction.operand, IR) and instruction.operand.eliminated == False:
+                                usage.add(instruction.operand)
+                                if instruction.operand in to_delete:
+                                        to_delete.remove(instruction.operand)
+                            elif isinstance(instruction, IR_Two_Operand):
+                                if isinstance(instruction.operand1, IR) and instruction.operand1.eliminated == False:
+                                    usage.add(instruction.operand1)
+                                    if instruction.operand1 in to_delete:
+                                        to_delete.remove(instruction.operand1)
+                                if isinstance(instruction.operand2, IR) and instruction.operand2.eliminated == False:
+                                    usage.add(instruction.operand2)
+                                    if instruction.operand2 in to_delete:
+                                        to_delete.remove(instruction.operand2)
+            if len(to_delete) == 0:
+                break
+            else:
+                for instruction in to_delete:
+                    if instruction not in usage:
+                        instruction.eliminated = True
+                        #instruction.get_container().remove_instruction(instruction)
+            
+            

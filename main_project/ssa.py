@@ -91,7 +91,7 @@ class SSA_Engine:
                 self.__search_ds.add(opc.load, kill)
             
             else:
-                phi = IR_Phi(val, None, var = id)
+                phi = IR_Phi(val, None, self.__current_block, var = id)
                 self.__current_block.add_instruction(phi)
                 self.__current_block.symbol_table[id] = phi
                 if isinstance(phi.operand1, IR):
@@ -224,10 +224,9 @@ class SSA_Engine:
         while(len(modified_instructions) != 0):
             instruction = modified_instructions.pop()
             original_instruction = self.__search_ds.get_next(instruction)
-            block = instruction.get_container()
             if original_instruction is not None:
                 self.__search_ds.delete(instruction)
-                block.remove_instruction(instruction)
+                instruction.get_container().remove_instruction(instruction)
                 for used in instruction.use_chain:
                     if isinstance(used, IR_One_Operand) and used.operand == instruction:
                         used.operand = original_instruction
@@ -246,7 +245,7 @@ class SSA_Engine:
             existing_val = join_block.symbol_table[id]
             if isinstance(existing_val, IR_Memory_Allocation) == False and (existing_val is None or create_new or isinstance(existing_val, IR_Phi) == False):
                 if left_block.symbol_table[id] != right_block.symbol_table[id]:
-                    phi = IR_Phi(left_block.symbol_table[id], right_block.symbol_table[id], id)
+                    phi = IR_Phi(left_block.symbol_table[id], right_block.symbol_table[id], self.__current_block, id)
                     join_block.add_instruction(phi, 0)
                     join_block.symbol_table[id] = phi
                     if isinstance(phi.operand1, IR):
