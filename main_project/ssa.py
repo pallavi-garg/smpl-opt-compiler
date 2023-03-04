@@ -24,9 +24,6 @@ class SSA_Engine:
     # returns cfg        
         self.__cfg.clean_up()
         self.__search_ds = None 
-
-        self.__cfg.print()      
-
         return self.__cfg       
 
     def is_indentifier_uninitialized(self, id):
@@ -91,7 +88,7 @@ class SSA_Engine:
                 self.__current_block.symbol_table[id] = phi
                 if isinstance(phi.operand1, IR):
                     phi.operand1.use_chain.append(phi)
-                    
+
         self.__only_while_join_blocks.append(self.__current_block)
 
     def create_control_flow(self, instruction, opcode, use_current_as_join):

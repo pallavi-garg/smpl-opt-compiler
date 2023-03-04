@@ -8,11 +8,11 @@ Instructions:
 Run following command to run the program:
     
     For main project:
-        python3.11 compiler.py testfiles/test1.smpl
+        python3.10 compiler.py testfiles/test1.smpl
     
     For project 1:
         cd warmup_project1
-        python3.11 main_project1.py 1+2.
+        python3.10 main_project1.py 1+2.
     For project 2:
         cd warmup_project2
-        python3.11 main.py "computation var i <- 2*3; var ab <- 7; (((ab * i))); i - 5 - 1 ."
+        python3.10 main.py "computation var i <- 2*3; var ab <- 7; (((ab * i))); i - 5 - 1 ."

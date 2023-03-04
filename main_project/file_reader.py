@@ -11,3 +11,18 @@ class File_Reader:
             # throws exception
             raise Exception("File Error: Invalid file") 
         return contents
+    
+
+class File_Writer:
+
+    def write(self, path, warnings, content):
+        path = path[0:-5] + "_output.smpl"
+        try:
+            with open(path, 'w') as file:
+                if warnings is not None:
+                    file.writelines(warnings)
+                    file.writelines("\n\n")
+                file.writelines(content)
+
+        except BaseException:
+            pass

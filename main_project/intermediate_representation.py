@@ -31,8 +31,13 @@ class IR:
                 return f"(0?)"
             else:
                 return f"({operand.instruction_number})"
-        elif isinstance(operand, Basic_Block) and operand.get_instructions():
-            return f"{operand}{self.format_operand(operand.get_instructions()[0])}"
+        elif isinstance(operand, Basic_Block):
+            ret = f"{operand}"
+            for instruction in operand.get_instructions():
+                if instruction.eliminated == False:
+                    ret = f"{operand}{self.format_operand(instruction)}"
+                    break
+            return ret
         else:
             return f"{operand}"
 
@@ -123,6 +128,7 @@ class IR_Kill(IR_One_Operand):
     def __init__(self, operand, container):
         super().__init__(IR_OP.kill, operand, container)
         self.loads = []
+        self.eliminated = True
 
     def made_load(self, load):
         self.loads.append(load)

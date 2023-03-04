@@ -1,6 +1,6 @@
 import sys
 from main_project.parser import Parser
-from main_project.file_reader import File_Reader
+from main_project.file_reader import File_Reader, File_Writer
 import argparse
 from main_project.dot_graph import Dot_Graph as dot
 from main_project.dead_code_emilinator import DE_Eliminator
@@ -11,40 +11,45 @@ def copy_clipboard(msg):
     with Popen(['xclip','-selection', 'clipboard'], stdin=PIPE) as pipe:
         pipe.communicate(input=msg.encode('utf-8'))
 
-def print_warnings(parser):
-    warnings = parser.warnings
-    if len(warnings) > 0:
-        print("\n-------Warnings------")
-        for warning in warnings:
-            print(warning)
-        print("---------------------\n")
+def get_warnings(parser):
+    warnings = None
+    if len(parser.warnings) > 0:
+        warnings = f"-------Warnings------"
+        for warning in parser.warnings:
+            warnings = f"{warnings}\n{warning}"
+        warnings = f"{warnings}\n---------------------\n"
+    return warnings
 
 def compile():
+    
     arg_parser = argparse.ArgumentParser(description="Compiles code of smpl language.")
     arg_parser.add_argument("file_path", help="Path of the file to compile.")
     args = arg_parser.parse_args()
 
     reader = File_Reader(args.file_path)
+    
     #reader = File_Reader('/home/pallavi/workspace/Compiler/Compiler-Py/smpl-opt-compiler/testfiles/test.smpl')
     p = Parser(reader.get_contents())
 
     try:
         control_flow_graph = p.parse()
-        '''
-        de_eliminator = DE_Eliminator()
-        de_eliminator.eliminate(control_flow_graph)
-        '''
 
-        print_warnings(p)
+        warnings = get_warnings(p)
         dot_graph = dot()
         output = dot_graph.get_representation(control_flow_graph)
+        if warnings is not None:
+            print(warnings)
         print(output)
+        writer = File_Writer()
+        writer.write(args.file_path, warnings, output)
 
         #Only supported on linux
         copy_clipboard(output)
     
     except Exception as ex:
-        print_warnings(p)
+        warnings = get_warnings(p)
+        if warnings is not None:
+            print(warnings)
         print(ex)
         return -1
         
