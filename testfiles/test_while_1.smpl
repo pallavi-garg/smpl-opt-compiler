@@ -1,0 +1,26 @@
+main
+var i, x, y, z, w, k;
+array[4] a, b, c;
+{
+    let i <- 1;
+    let a[i] <- 0;
+    let x <- a[i]; 
+    let a[i] <- 1;
+     while a[i]>=0 do
+        let y <- a[i] - 1;
+        let z <- b[i] + 1;
+        let y <- x + 1;
+        while a[i]>=0 do
+            let y <- a[i] - 1;
+            let w <- b[i] + 1;         
+            let a[i] <- x - 1;
+            let b[i] <- x + 1;
+            let y <- x + 1;
+        od;
+    od;
+    call OutputNum(i);
+    call OutputNum(x);
+    call OutputNum(a[i]);
+    call OutputNum(b[i]);
+    call OutputNum(w);
+}.

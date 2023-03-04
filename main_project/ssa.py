@@ -85,17 +85,14 @@ class SSA_Engine:
         for id in self.__current_block.symbol_table:
             val = self.__current_block.symbol_table[id]
             
-            if isinstance(val, IR_Memory_Allocation) == True:
-                kill = IR_Kill(val, self.__current_block)
-                self.__current_block.add_instruction(kill)
-                self.__search_ds.add(opc.load, kill)
-            
-            else:
+            if isinstance(val, IR_Memory_Allocation) == False:
                 phi = IR_Phi(val, None, self.__current_block, var = id)
                 self.__current_block.add_instruction(phi)
                 self.__current_block.symbol_table[id] = phi
                 if isinstance(phi.operand1, IR):
                     phi.operand1.use_chain.append(phi)
+                    
+        self.__only_while_join_blocks.append(self.__current_block)
 
     def create_control_flow(self, instruction, opcode, use_current_as_join):
     # updates current block based on use_current_as_join
@@ -120,8 +117,6 @@ class SSA_Engine:
         self.__current_block.fall_through_block.join_block = join_block
         self.create_instruction(opcode, instruction, self.__current_block.branch_block)
         self.__all_join_blocks.append(join_block)
-        if use_current_as_join:
-            self.__only_while_join_blocks.append(join_block)
         return self.__current_block.fall_through_block, self.__current_block.branch_block, join_block
 
     def processing_fall_through(self):
@@ -134,8 +129,7 @@ class SSA_Engine:
     # adds branch instruction if current block is a fall through block. This is done to prevent branch block instructions
         join_block = self.__current_block.join_block
         if join_block is None:
-            main_block = self.__control_flow_main_blocks.pop()
-            self.__control_flow_main_blocks.append(main_block) #append main_block as it has not ended yet
+            main_block = self.__control_flow_main_blocks[-1]
             join_block = main_block.fall_through_block.join_block
 
         self.create_instruction(opc.bra, join_block)
@@ -143,8 +137,7 @@ class SSA_Engine:
     def processing_branch(self):
     # sets current working block to branch block
         prev_current = self.__current_block
-        main_block = self.__control_flow_main_blocks.pop()
-        self.__control_flow_main_blocks.append(main_block) #append main_block as it has not ended yet
+        main_block = self.__control_flow_main_blocks[-1]
 
         self.__current_block = main_block.branch_block
         self.__current_block.processing_started()
@@ -157,8 +150,7 @@ class SSA_Engine:
         join_block = self.__current_block.join_block
 
         if join_block is None:
-            main_block = self.__control_flow_main_blocks.pop()
-            self.__control_flow_main_blocks.append(main_block) #append main_block as it has not ended yet
+            main_block = self.__control_flow_main_blocks[-1]
             join_block = main_block.fall_through_block.join_block
             self.__current_block.fall_through_block = join_block
         self.__current_block = join_block
@@ -392,6 +384,14 @@ class SSA_Engine:
         join_kill = None
         prev_load = None
 
+        if len(self.__only_while_join_blocks) > 0:
+            loop_join_block = self.__only_while_join_blocks[-1]
+            if ssa_val not in loop_join_block.temp_kills:
+                kill = IR_Kill(ssa_val, loop_join_block)
+                loop_join_block.add_instruction(kill, 0)
+                loop_join_block.temp_kills.add(ssa_val)
+                self.__search_ds.add(opc.load, kill)
+
         if opcode == opc.load:
             instruction, join_kill = self.__search_ds.get_load(opcode, ssa_val, array_address_ptr, index, self.__current_block)
             if join_kill is not None:
@@ -425,8 +425,6 @@ class SSA_Engine:
             self.__current_block.add_instruction(array_location)
             self.__current_block.add_instruction(instruction)
             self.__search_ds.add(opc.load, instruction)
-                
-
         return instruction
 
         
