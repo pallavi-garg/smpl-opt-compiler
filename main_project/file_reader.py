@@ -16,7 +16,7 @@ class File_Reader:
 class File_Writer:
 
     def write(self, path, warnings, content):
-        path = path[0:-5] + "_output.smpl"
+        path = path[0:-5] + "_output.txt"
         try:
             with open(path, 'w') as file:
                 if warnings is not None:
