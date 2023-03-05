@@ -10,7 +10,8 @@ array[5] arra, b;
 	call OutputNum(arra[1]);
     while x<10 do
         let x <- i + 1; 
-        let y <- j + 1; 
+        let y <- b[1] + 1; 
+        let b[1] <- 2 + 3;
 		call OutputNum(arra[1]); 
 		let arra[1] <- 110;
 		call OutputNum(arra[1]); 
@@ -24,7 +25,6 @@ array[5] arra, b;
             fi;
             call OutputNum(arra[1]); 
         od; 
-        let i <-i + 1 
     od; 
     call OutputNum(x);
 	call OutputNum(arra[1]);

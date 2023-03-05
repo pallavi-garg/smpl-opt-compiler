@@ -6,13 +6,13 @@ array[4] a, b, c;
     call OutputNum(a[1]);
     if (i == 1)
     then
-        while(a[1]>=0) do
+        while a[1]>=0 do
             let a[1] <- x - 1;
             call OutputNum(a[1]);
             call OutputNum(b[1]);
         od;
 
-        while(a[1]>=0) do
+        while a[1]>=0  do
             let a[1] <- x - 1;
             call OutputNum(a[1]);
             call OutputNum(b[1]);
