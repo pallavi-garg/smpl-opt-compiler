@@ -188,7 +188,8 @@ class SSA_Engine:
         modified = []
         for phi_instruction in join_block.get_instructions():
             if isinstance(phi_instruction, IR_Phi):
-                if phi_instruction.instruction_number == phi_instruction.operand2.instruction_number:
+                if phi_instruction.instruction_number == phi_instruction.operand2.instruction_number \
+                    or phi_instruction.operand1 == phi_instruction.operand2:
                     for instruction in phi_instruction.use_chain:
                         if isinstance(instruction, IR_One_Operand) and instruction.operand == phi_instruction:
                             instruction.operand = phi_instruction.operand1
