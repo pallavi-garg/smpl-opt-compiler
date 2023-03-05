@@ -6,7 +6,7 @@ class DE_Eliminator:
         if remove_only_kill:
             self.ops = [IR_OP.kill]
         else:
-            self.ops = [IR_OP.add, IR_OP.sub, IR_OP.mul, IR_OP.div, IR_OP.kill, IR_OP.phi]
+            self.ops = [IR_OP.add, IR_OP.sub, IR_OP.mul, IR_OP.div, IR_OP.kill, IR_OP.phi, IR_OP.const]
 
     def __can_elimintate(self, instruction):
         return isinstance(instruction, IR) and (instruction.op_code in self.ops)
@@ -35,13 +35,15 @@ class DE_Eliminator:
                                         to_delete.remove(instruction.operand)
                             elif isinstance(instruction, IR_Two_Operand):
                                 if isinstance(instruction.operand1, IR) and instruction.operand1.eliminated == False:
-                                    usage.add(instruction.operand1)
-                                    if instruction.operand1 in to_delete:
-                                        to_delete.remove(instruction.operand1)
+                                    if instruction.op_code != IR_OP.phi or instruction.operand1 in usage:
+                                        usage.add(instruction.operand1)
+                                        if instruction.operand1 in to_delete:
+                                            to_delete.remove(instruction.operand1)
                                 if isinstance(instruction.operand2, IR) and instruction.operand2.eliminated == False:
-                                    usage.add(instruction.operand2)
-                                    if instruction.operand2 in to_delete:
-                                        to_delete.remove(instruction.operand2)
+                                    if instruction.op_code != IR_OP.phi or instruction.operand2 in usage:
+                                        usage.add(instruction.operand2)
+                                        if instruction.operand2 in to_delete:
+                                            to_delete.remove(instruction.operand2)
             if len(to_delete) == 0:
                 break
             else:
