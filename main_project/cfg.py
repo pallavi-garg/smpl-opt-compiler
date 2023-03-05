@@ -110,4 +110,6 @@ class Basic_Block:
         return self.__instructions
 
     def remove_instruction(self, instruction):
-        self.__instructions.remove(instruction)
+        if instruction in self.__instructions:
+            self.__instructions.remove(instruction)
+        instruction.isdeleted = True

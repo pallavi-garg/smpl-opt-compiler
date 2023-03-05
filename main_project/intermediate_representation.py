@@ -19,6 +19,7 @@ class IR:
         # collection of instructions where this(self) is used
         self.use_chain = [] 
         self.eliminated = False
+        self.isdeleted = False
 
     def __str__(self):
         return f"({self.instruction_number}) : {self.op_code}"

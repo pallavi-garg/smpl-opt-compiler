@@ -19,6 +19,7 @@ class SSA_Engine:
         self.__base_address = None
         self.__all_join_blocks = []
         self.__only_while_join_blocks = []
+        self.phis = []
     
     def get_cfg(self):
     # returns cfg        
@@ -200,10 +201,8 @@ class SSA_Engine:
                                 instruction.operand2 = phi_instruction.operand1
                                 modified.append(instruction)
                     to_delete.append(phi_instruction)
-                ''' DONOT do this as this phi could have a use at end of the program for variable w - test_while_1.smpl
-                elif len(phi_instruction.use_chain) == 0:
-                    to_delete.append(phi_instruction)
-                '''
+                # DONOT remove phis with no use yet this as this phi could have a use at end of the program for variable w - test_while_1.smpl
+            
         for id in join_block.symbol_table:
             if join_block.symbol_table[id] in to_delete:
                 join_block.symbol_table[id] = join_block.symbol_table[id].operand1
@@ -213,13 +212,24 @@ class SSA_Engine:
         
         self.__update_modified(modified)
 
-    def __update_modified(self, modified_instructions):
+    def __update_modified(self, modified_instructions, just_phis = False):
+        
         while(len(modified_instructions) != 0):
             instruction = modified_instructions.pop()
             original_instruction = self.__search_ds.get_next(instruction)
+            if just_phis == True and instruction.op_code == opc.phi and instruction.operand1 == instruction.operand2:
+                original_instruction = instruction.operand1
+
             if original_instruction is not None:
                 self.__search_ds.delete(instruction)
-                instruction.get_container().remove_instruction(instruction)
+                block = instruction.get_container()
+                block.remove_instruction(instruction)
+                if just_phis == True:
+                    for id in block.symbol_table:
+                        if block.symbol_table[id] == instruction:
+                            block.symbol_table[id] = original_instruction
+                            break
+
                 for used in instruction.use_chain:
                     if isinstance(used, IR_One_Operand) and used.operand == instruction:
                         used.operand = original_instruction
@@ -231,6 +241,9 @@ class SSA_Engine:
                         if used.operand2 == instruction:
                             used.operand2 = original_instruction
                             modified_instructions.append(used)
+            elif just_phis == False and instruction.isdeleted == False and isinstance(instruction, IR_Phi) and instruction.operand1 == instruction.operand2:
+                self.phis.append(instruction)
+        
         
     def __propagate_phi(self, left_block, right_block, join_block, create_new = False):  
 
@@ -297,6 +310,11 @@ class SSA_Engine:
 
         self.__propagate_phi(join_block, self.__current_block, join_block)
         self.__cleanup_phi(join_block)
+
+        if(len(self.__control_flow_main_blocks) == 0) and len(self.phis) > 0:
+            self.__update_modified(self.phis, True)
+            self.phis.clear()
+        
         self.__propagate_kill_loop(join_block)
 
         self.__current_block = right
