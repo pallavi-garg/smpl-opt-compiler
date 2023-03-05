@@ -11,6 +11,8 @@ class Token_Type:
     OpenParanthesis = '('
     Begin = '{'
     End = '}'
+    OpenBracket = '['
+    CloseBracket = ']'
     Number = re.compile(r"[0-9]+")
     Identifier = re.compile(r"[a-zA-Z]([a-zA-Z0-9]+)?")
     Comma = ','
@@ -33,9 +35,10 @@ class Token_Type:
     Od = 'od'
     Return = 'return'
     Call = 'call'
-    Fn_OutputNum = 'OutputNum('
-    Fn_InputNum = 'InputNum('
-    Fn_OutputNewLine = 'OutputNewLine('
+    Fn_OutputNum = re.compile(r"OutputNum( )*\(")
+    Fn_InputNum = re.compile(r"InputNum( )*\(")
+    Fn_OutputNewLine = re.compile(r"OutputNewLine( )*\(")
+    Array = 'array'
 
 
     def __init__(self):
@@ -47,6 +50,8 @@ class Token_Type:
         self.reserved_token_list.append(self.CloseParanthesis)
         self.reserved_token_list.append(self.Begin)
         self.reserved_token_list.append(self.End)
+        self.reserved_token_list.append(self.OpenBracket)
+        self.reserved_token_list.append(self.CloseBracket)
         self.reserved_token_list.append(self.Minus)
         self.reserved_token_list.append(self.Plus)
         self.reserved_token_list.append(self.Mul)
@@ -80,13 +85,15 @@ class Token_Type:
 
         #bigger
         self.reserved_token_list.append(self.While)
+        self.reserved_token_list.append(self.Array)
         self.reserved_token_list.append(self.Return)
-        self.reserved_token_list.append(self.Fn_InputNum)
-        self.reserved_token_list.append(self.Fn_OutputNum)
 
         #regex
         self.reserved_token_list.append(self.Number)
         self.reserved_token_list.append(self.Identifier)
+        self.reserved_token_list.append(self.Fn_InputNum)
+        self.reserved_token_list.append(self.Fn_OutputNum)
+        self.reserved_token_list.append(self.Fn_OutputNewLine)
 
     def get_tokens(self):
     # returns list of tokens that are supported by tokenizer

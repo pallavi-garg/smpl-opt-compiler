@@ -1,0 +1,28 @@
+main
+var i, x;
+array[4] a, b, c;
+{
+    let i <- 1;
+    let a[i] <- 0;
+    let x <- a[i]; 
+    let c[i] <- 1000;
+    while(a[i]>=0) do
+        let a[i] <- x - 1;
+        let b[i] <- x - 1;
+         while(a[i]>=0) do
+            if x < 10 then
+                let a[i] <- x - 1;
+            else            
+                let b[i] <- x - 11;
+            fi;
+            od;
+    od;
+
+    while(c[i]>=0) do
+        let x <- x - 1;
+    od;
+
+    call OutputNum(a[i]);
+    call OutputNum(b[i]);
+    call OutputNum(c[i]);
+}.

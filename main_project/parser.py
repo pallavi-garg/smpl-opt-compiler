@@ -5,7 +5,7 @@ Parser for grammar defined in ../grammars/smpl_grammar.txt
 
 from .tokenizer import Tokenizer
 from .token_types import Token_Type
-from .intermediate_representation import IR_OP as opc, IR
+from .intermediate_representation import IR_OP as opc, IR_Memory_Allocation
 from .ssa import SSA_Engine
 
 class Parser:
@@ -19,6 +19,7 @@ class Parser:
                             Token_Type.GreaterThan : opc.ble,
                             Token_Type.GreaterThanEqualTo : opc.blt
                             }
+    type_declarations = [Token_Type.Array, Token_Type.Var]
 
     def __init__(self, input_string):
     # constructor initialization
@@ -51,13 +52,26 @@ class Parser:
            self.__syntax_error("Undefined identifier - '" + id + "'")
         if(self.__ssa.is_indentifier_uninitialized(id)):
             self.warnings.append(f"Warning at line:{self.__tokenizer.line_number} -> Using uninitialized variable '{id}'")
-        return self.__ssa.get_identifier_val(id)
+
+        value = self.__ssa.get_identifier_val(id)        
+        if isinstance(value, IR_Memory_Allocation):
+            indices = self.__read_indexing()
+            if len(indices) != len(value.dimensions):
+                self.__syntax_error("Array not accessed properly!")
+            value = self.__ssa.get_array_value(id, indices)
+        return value
     
-    def __insert_identifier(self, id, value = None):
+    def __insert_identifier(self, id, value = None, indices = None):
     # inserts identifier in symbol table
         if value is None:
             value = self.__ssa.uninitialized_instruction
-        self.__ssa.set_identifier_val(id, value)
+        if indices is not None:
+            current_val = self.__ssa.get_identifier_val(id)
+            if isinstance(current_val, IR_Memory_Allocation) and len(indices) != len(current_val.dimensions):
+                self.__syntax_error("Array not accessed properly!")
+            self.__ssa.set_array_value(id, indices, value)
+        else:
+            self.__ssa.set_identifier_val(id, value)
     
     def __consume(self, tokenType):
     # tokenType - Token_Type
@@ -68,13 +82,34 @@ class Parser:
 
     def __consume_type_declaration(self):
     # consumes type declaration
-        while self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Var:
-            while self.__tokenizer.token and self.__tokenizer.token.type in [Token_Type.Var, Token_Type.Comma]:
-                self.__consume(self.__tokenizer.token.type)
-                self.__variable_declaration()
-            # if there are multiple semi colons, consume them
-            while(self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.SemiColon):
-                self.__consume(Token_Type.SemiColon)
+        while self.__tokenizer.token and self.__tokenizer.token.type in self.type_declarations:
+            declaration_type = self.__tokenizer.token.type
+            self.__consume(declaration_type)
+            dimensions = []
+            if declaration_type == Token_Type.Array:
+                dimensions = self.__read_indexing(True)
+            while self.__tokenizer.token and self.__tokenizer.token.type in [Token_Type.Identifier, Token_Type.Comma]:
+                if self.__tokenizer.token.type == Token_Type.Comma:
+                    self.__consume(self.__tokenizer.token.type)
+                if declaration_type == Token_Type.Array:
+                    self.__array_declaration(dimensions)
+                else:
+                    self.__variable_declaration()
+                
+            self.__consume(Token_Type.SemiColon)
+
+    def __read_indexing(self, declaration = False):
+        dimensions = []
+        while self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.OpenBracket:
+            self.__consume(Token_Type.OpenBracket)
+            if declaration == True:
+                num = self.__tokenizer.token.val
+                self.__consume(Token_Type.Number)
+            else:
+                num = self.__expression()
+            dimensions.append(num)
+            self.__consume(Token_Type.CloseBracket)
+        return dimensions
 
     def __consume_fn_declarations(self):
     # consumes function declaration
@@ -107,6 +142,8 @@ class Parser:
 
     def __handle_function_call(self):
     # handles predefined function call
+        if self.__tokenizer.token.type not in [Token_Type.Fn_OutputNum, Token_Type.Fn_OutputNewLine]:
+            self.__syntax_error("Invalid function name!")
         while self.__tokenizer.token and self.__tokenizer.token.type in [Token_Type.Fn_OutputNum, Token_Type.Fn_OutputNewLine]:
             fn_type = self.__tokenizer.token.type
             self.__consume(self.__tokenizer.token.type)
@@ -121,14 +158,11 @@ class Parser:
         if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Identifier:
             id = self.__tokenizer.token.id
             self.__consume(Token_Type.Identifier)
+            indices = None
+            if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.OpenBracket:
+               indices = self. __read_indexing()
             self.__consume(Token_Type.Assignment)
-            if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Call:
-                self.__consume(Token_Type.Call)
-                self.__consume(Token_Type.Fn_InputNum)
-                self.__consume(Token_Type.CloseParanthesis)
-                self.__insert_identifier(id, self.__ssa.create_instruction(opc.read))
-            else:
-                self.__insert_identifier(id, self.__expression())
+            self.__insert_identifier(id, self.__expression(), indices)
         else:
             self.__syntax_error("Expected identifier assignment")
 
@@ -136,6 +170,15 @@ class Parser:
     # handle variable declaration
         if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Identifier:
             self.__insert_identifier(self.__tokenizer.token.id)
+            self.__consume(Token_Type.Identifier)
+        else:
+             self.__syntax_error("Expected identifier but not found")
+    
+    def __array_declaration(self, dimensions):
+        # handle variable declaration
+        if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Identifier:
+            pointer_val, _ = self.__ssa.create_instruction(opc.malloc, dimensions, self.__tokenizer.token.id)
+            self.__insert_identifier(self.__tokenizer.token.id, pointer_val)
             self.__consume(Token_Type.Identifier)
         else:
              self.__syntax_error("Expected identifier but not found")
@@ -148,7 +191,7 @@ class Parser:
             token_type = self.__tokenizer.token.type
             self.__consume(token_type)
             opcode = opc.add if token_type == Token_Type.Plus else opc.sub
-            instruction = self.__ssa.create_instruction(opcode, instruction, self.__term())
+            instruction, _ = self.__ssa.create_instruction(opcode, instruction, self.__term())
         
         return instruction
 
@@ -160,7 +203,7 @@ class Parser:
             token_type = self.__tokenizer.token.type
             self.__consume(token_type)
             opcode = opc.div if token_type == Token_Type.Div else opc.mul
-            instruction = self.__ssa.create_instruction(opcode, instruction, self.__factor())
+            instruction, _ = self.__ssa.create_instruction(opcode, instruction, self.__factor())
 
         return instruction
 
@@ -176,11 +219,17 @@ class Parser:
                 else:
                     self.__syntax_error("Expected ) but not found")
             elif self.__tokenizer.token.type == Token_Type.Number:
-                instruction = self.__ssa.create_instruction(opc.const, self.__tokenizer.token.val)
+                instruction, _ = self.__ssa.create_instruction(opc.const, self.__tokenizer.token.val)
                 self.__consume(Token_Type.Number)
             elif self.__tokenizer.token.type == Token_Type.Identifier:
-                instruction = self.__look_up(self.__tokenizer.token.id)
+                id = self.__tokenizer.token.id
                 self.__consume(Token_Type.Identifier)
+                instruction = self.__look_up(id)
+            elif self.__tokenizer.token.type == Token_Type.Call:
+                self.__consume(Token_Type.Call)
+                self.__consume(Token_Type.Fn_InputNum)
+                self.__consume(Token_Type.CloseParanthesis)
+                instruction, _ = self.__ssa.create_instruction(opc.read)
         else:
             self.__syntax_error("Syntax error in factor")
         return instruction
@@ -201,13 +250,25 @@ class Parser:
         self.__ssa.end_control_flow(left_block, right_block, join_block)
                 
     def __handle_relation(self):
+        while self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.OpenParanthesis:
+            self.__consume(Token_Type.OpenParanthesis)
         op1 = self.__expression()
+        while self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.CloseParanthesis:
+            self.__consume(Token_Type.CloseParanthesis)
+
         opcode = self.__tokenizer.token
         if opcode.type not in self.relational_operators:
             self.__syntax_error("Expected a relational operator.")
         self.__consume(opcode.type)
+
+        while self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.OpenParanthesis:
+            self.__consume(Token_Type.OpenParanthesis)
         op2 = self.__expression()
-        return self.__ssa.create_instruction(opc.cmp, op1, op2), opcode.type
+        while self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.CloseParanthesis:
+            self.__consume(Token_Type.CloseParanthesis)
+        
+        instruction, _ = self.__ssa.create_instruction(opc.cmp, op1, op2)
+        return instruction, opcode.type
     
     def __handle_while_statement(self):
         self.__ssa.split_block()
@@ -222,4 +283,4 @@ class Parser:
         self.__ssa.end_loop_control_flow(right_block, join_block)
         
     def __handle_return_statement(self):
-        pass
+        self.__syntax_error("Return statement not supported!")

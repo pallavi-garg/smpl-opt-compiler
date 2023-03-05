@@ -20,6 +20,11 @@ class Control_Flow_Graph:
     def get_blocks(self):
     # returns root block
         return self.__blocks
+
+    def sort_blocks(self):
+        temp_list = self.__blocks.copy()
+        temp_list.sort(key=lambda block: block.processing_order, reverse=True)
+        return temp_list
     
     def __delete_empty_blocks(self):
         to_delete = []
@@ -43,20 +48,28 @@ class Control_Flow_Graph:
         self.__delete_empty_blocks()
 
     def print(self):
+        self.sort_blocks()
         for block in self.__blocks:
-            print(f"name -> {block} : fall -> {block.fall_through_block}, branch -> {block.branch_block}, join -> {block.join_block}")
+            print(f"name -> {block} : {block.processing_order} : fall -> {block.fall_through_block}, branch -> {block.branch_block}, join -> {block.join_block}")
         self.clean_up()
 
 class Basic_Block:
 # Class to represent basic block.
 # All instructions in a basic block are executed together as a whole.
     __next_block_num = 0
+    __next_processing_order = 1
 
     @staticmethod
     def get_next_ir_number():
         num = Basic_Block.__next_block_num
         Basic_Block.__next_block_num += 1
         return num
+
+    def processing_started(self):
+        if self.processing_order is None:
+            num = Basic_Block.__next_processing_order
+            Basic_Block.__next_processing_order += 1
+            self.processing_order = num
 
     def __init__(self, dominant_block = None):
         self.__name = f'BB{Basic_Block.get_next_ir_number()}'
@@ -67,6 +80,9 @@ class Basic_Block:
         self.__instructions = []
         self.symbol_table = {}
         self.set_dominator_block(dominant_block)
+        self.processing_order = None
+        self.killed_arrays = set()
+        self.temp_kills = set()
 
     def __eq__(self, other):
         return isinstance(other, Basic_Block) and self.__name == other.__name
@@ -94,4 +110,6 @@ class Basic_Block:
         return self.__instructions
 
     def remove_instruction(self, instruction):
-        self.__instructions.remove(instruction)
+        if instruction in self.__instructions:
+            self.__instructions.remove(instruction)
+        instruction.isdeleted = True

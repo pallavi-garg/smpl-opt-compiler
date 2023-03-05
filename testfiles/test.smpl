@@ -1,0 +1,17 @@
+main
+var i, x;
+array[4] a;
+{
+    let i <- 1;
+    let a[i] <- 0;
+    let x <- a[i]; 
+    while(a[i]==0) do
+        let a[i] <- x - 1;
+        let i <- i + 1;
+    od;
+    let a[i] <- x - 1;
+    call OutputNum(i);
+    call OutputNum(x);
+    call OutputNum(a[i]);
+
+}.
