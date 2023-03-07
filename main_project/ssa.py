@@ -253,7 +253,7 @@ class SSA_Engine:
             if isinstance(existing_val, IR_Memory_Allocation) == False and (existing_val is None or create_new or isinstance(existing_val, IR_Phi) == False):
                 if left_block.symbol_table[id] != right_block.symbol_table[id]:
                     phi = IR_Phi(left_block.symbol_table[id], right_block.symbol_table[id], self.__current_block, id)
-                    join_block.add_instruction(phi, 0)
+                    join_block.add_instruction(phi)
                     join_block.symbol_table[id] = phi
                     if isinstance(phi.operand1, IR):
                         phi.operand1.use_chain.append(phi)
