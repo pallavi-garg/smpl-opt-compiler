@@ -190,17 +190,22 @@ class SSA_Engine:
             if isinstance(phi_instruction, IR_Phi):
                 if phi_instruction.instruction_number == phi_instruction.operand2.instruction_number \
                     or phi_instruction.operand1 == phi_instruction.operand2:
+                    if phi_instruction.operand1 == phi_instruction.operand2:
+                        pass
                     for instruction in phi_instruction.use_chain:
                         if isinstance(instruction, IR_One_Operand) and instruction.operand == phi_instruction:
                             instruction.operand = phi_instruction.operand1
                             modified.append(instruction)
+                            instruction.operand.use_chain.append(instruction)
                         elif isinstance(instruction, IR_Two_Operand):
                             if instruction.operand1 == phi_instruction:
                                 instruction.operand1 = phi_instruction.operand1
                                 modified.append(instruction)
+                                instruction.operand1.use_chain.append(instruction)
                             if instruction.operand2 == phi_instruction:
                                 instruction.operand2 = phi_instruction.operand1
                                 modified.append(instruction)
+                                instruction.operand2.use_chain.append(instruction)
                     to_delete.append(phi_instruction)
                 # DONOT remove phis with no use yet this as this phi could have a use at end of the program for variable w - test_while_1.smpl
             
@@ -235,13 +240,16 @@ class SSA_Engine:
                     if isinstance(used, IR_One_Operand) and used.operand == instruction:
                         used.operand = original_instruction
                         modified_instructions.append(used)
+                        used.operand.use_chain.append(used)
                     if isinstance(used, IR_Two_Operand):
                         if used.operand1 == instruction:
                             used.operand1 = original_instruction
                             modified_instructions.append(used)
+                            used.operand1.use_chain.append(used)
                         if used.operand2 == instruction:
                             used.operand2 = original_instruction
                             modified_instructions.append(used)
+                            used.operand2.use_chain.append(used)
             elif just_phis == False and instruction.isdeleted == False and isinstance(instruction, IR_Phi) and instruction.operand1 == instruction.operand2:
                 self.phis.append(instruction)
         
