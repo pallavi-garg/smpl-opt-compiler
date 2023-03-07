@@ -109,6 +109,8 @@ class Parser:
                 num = self.__expression()
             dimensions.append(num)
             self.__consume(Token_Type.CloseBracket)
+        if declaration and len(dimensions) == 0:
+            self.__syntax_error("Indexing missing for array declaration.")
         return dimensions
 
     def __consume_fn_declarations(self):
@@ -169,6 +171,8 @@ class Parser:
     def __variable_declaration(self):
     # handle variable declaration
         if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Identifier:
+            if self.__ssa.is_already_declared(self.__tokenizer.token.id):
+                self.__syntax_error("Cannot declare same variable twice.")
             self.__insert_identifier(self.__tokenizer.token.id)
             self.__consume(Token_Type.Identifier)
         else:
@@ -177,6 +181,8 @@ class Parser:
     def __array_declaration(self, dimensions):
         # handle variable declaration
         if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Identifier:
+            if self.__ssa.is_already_declared(self.__tokenizer.token.id):
+                self.__syntax_error("Cannot declare same variable twice.")
             pointer_val, _ = self.__ssa.create_instruction(opc.malloc, dimensions, self.__tokenizer.token.id)
             self.__insert_identifier(self.__tokenizer.token.id, pointer_val)
             self.__consume(Token_Type.Identifier)

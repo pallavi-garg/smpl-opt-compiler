@@ -26,6 +26,9 @@ class SSA_Engine:
         self.__cfg.clean_up()
         self.__search_ds = None 
         return self.__cfg       
+    
+    def is_already_declared(self, id):
+        return id in self.__current_block.symbol_table
 
     def is_indentifier_uninitialized(self, id):
     # returns warnings found by ssa engine
