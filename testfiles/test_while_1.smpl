@@ -6,7 +6,6 @@ array[4] a, b, c;
     let a[i] <- 0;
     let x <- a[i]; 
     let a[i] <- 1;
-    let y <- x + 1;
      while a[i]>=0 do
         let y <- a[i] - 1;
         let z <- b[i] + 1;
@@ -28,7 +27,7 @@ array[4] a, b, c;
             let w <- b[i] + 1;         
             let a[i] <- x - 1;
             let b[i] <- x + 1;
-            let y <- x + 11;
+            let y <- x + 1;
             call OutputNum(i);
             call OutputNum(x);
             call OutputNum(y);
@@ -43,4 +42,5 @@ array[4] a, b, c;
     call OutputNum(b[i]);
     call OutputNum(w);
     call OutputNum(y);
+    call OutputNum(z);
 }.
