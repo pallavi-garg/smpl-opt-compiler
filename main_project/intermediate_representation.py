@@ -147,12 +147,16 @@ class IR_Load(IR_One_Operand):
     
 class IR_Store(IR_Two_Operand):
 
-    def __init__(self, operand1, operand2, container = None, var = None):
+    def __init__(self, operand1, operand2, container = None, var = None, id = None):
         super().__init__(IR_OP.store, operand1, operand2, container)
         self.var = var
+        self.id = id
     
     def __hash__(self) -> int:
         return self.instruction_number
+    
+    def __str__(self):
+       return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.operand1)}, {self.format_operand(self.operand2)} --- {self.id}"
     
 class IR_OP:
     add = 'add' # add x y       -> x+y

@@ -437,7 +437,7 @@ class SSA_Engine:
                 if join_kill is not None:
                     join_kill.made_load(instruction)
             else:
-                instruction = IR_Store(value, array_location, self.__current_block, ssa_val)
+                instruction = IR_Store(value, array_location, self.__current_block, ssa_val, id)
                 array_location.use_chain.append(instruction)
                 if isinstance(value, IR):
                     value.use_chain.append(instruction)
