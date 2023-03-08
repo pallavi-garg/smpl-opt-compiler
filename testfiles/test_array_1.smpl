@@ -1,6 +1,6 @@
 main 
 var x,y,i,j; 
-array[5] arra, b;
+array[5] arra, b, c;
 {
     let i<-call InputNum(); 
     let x<-0; 

@@ -12,14 +12,12 @@ array[4] a, b, c;
         let y <- x + 1;
          call OutputNum(i);
             call OutputNum(x);
-            call OutputNum(y);
             call OutputNum(z);
             call OutputNum(w);
             call OutputNum(k);
         while a[i]>=0 do
             call OutputNum(i);
             call OutputNum(x);
-            call OutputNum(y);
             call OutputNum(z);
             call OutputNum(w);
             call OutputNum(k);
@@ -30,17 +28,21 @@ array[4] a, b, c;
             let y <- x + 1;
             call OutputNum(i);
             call OutputNum(x);
-            call OutputNum(y);
             call OutputNum(z);
             call OutputNum(w);
             call OutputNum(k);
         od;
     od;
+    if (i < 10) then
+    let y <- x + 10;
     call OutputNum(i);
     call OutputNum(x);
     call OutputNum(a[i]);
     call OutputNum(b[i]);
     call OutputNum(w);
-    call OutputNum(y);
     call OutputNum(z);
+    fi;
+    while(i < 10) do
+     call OutputNum(z);
+    od;
 }.
