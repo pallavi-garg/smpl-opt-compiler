@@ -138,9 +138,13 @@ class IR_Kill(IR_One_Operand):
         return self.instruction_number
     
 class IR_Load(IR_One_Operand):
-    def __init__(self, operand, prev_load, container = None):
+    def __init__(self, operand, prev_load, container = None, var = None):
         super().__init__(IR_OP.load, operand, container)
         self.prev_load = prev_load
+        self.var = var
+
+    def __str__(self):
+        return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.operand)} ---{self.var}"
     
     def __hash__(self) -> int:
         return self.instruction_number

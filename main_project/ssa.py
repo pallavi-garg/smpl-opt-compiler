@@ -435,7 +435,7 @@ class SSA_Engine:
             array_address_ptr.use_chain.append(array_location)    
             index.use_chain.append(array_location)
             if opcode == opc.load:
-                instruction = IR_Load(array_location, prev_load, self.__current_block)
+                instruction = IR_Load(array_location, prev_load, self.__current_block, id)
                 array_location.use_chain.append(instruction)
                 if join_kill is not None:
                     join_kill.made_load(instruction)
