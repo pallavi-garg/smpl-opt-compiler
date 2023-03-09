@@ -26,9 +26,11 @@ def compile():
     arg_parser.add_argument("file_path", help="Path of the file to compile.")
     args = arg_parser.parse_args()
     file_path = args.file_path
+    
+    
+    #file_path = '/home/pallavi/workspace/Compiler/Compiler-Py/smpl-opt-compiler/testfiles/test.smpl'
     reader = File_Reader(file_path)
     
-    #reader = File_Reader('/home/pallavi/workspace/Compiler/Compiler-Py/smpl-opt-compiler/testfiles/test.smpl')
     p = Parser(reader.get_contents())
 
     try:
@@ -37,12 +39,11 @@ def compile():
 
         write_output(control_flow_graph, warnings, file_path)
 
-        '''
+        
         dce = DE_Eliminator2()
         dce.eliminate(control_flow_graph)
 
         write_output(control_flow_graph, warnings, file_path)
-        '''
     
     except Exception as ex:
         warnings = get_warnings(p)

@@ -263,6 +263,8 @@ class Parser:
             self.__consume(Token_Type.CloseParanthesis)
 
         opcode = self.__tokenizer.token
+        if opcode is None:
+            self.__syntax_error("Invalid operator used.")
         if opcode.type not in self.relational_operators:
             self.__syntax_error("Expected a relational operator.")
         self.__consume(opcode.type)
