@@ -33,8 +33,11 @@ def compile():
 
     try:
         control_flow_graph = p.parse()
+
+        '''
         dce = DE_Eliminator()
         dce.eliminate(control_flow_graph)
+        '''
 
         warnings = get_warnings(p)
         dot_graph = dot()
