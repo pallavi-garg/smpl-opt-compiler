@@ -57,7 +57,7 @@ class DE_Eliminator:
                 if instruction in self.used_in_phi:
                     all_unused = True
                     for phi in self.used_in_phi[instruction]:
-                        if phi in self.usage:
+                        if phi in self.usage or phi in self.used_in_phi:
                             all_unused = False
                             break
                     instruction.eliminated = all_unused
