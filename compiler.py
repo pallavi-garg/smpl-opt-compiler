@@ -39,18 +39,25 @@ def compile():
 
         write_output(control_flow_graph, warnings, file_path)
 
+    except Exception as ex:
+        warnings = get_warnings(p)
+        if warnings is not None:
+            print(warnings)
+        print(f'\nException occurred during SSA: {ex}')
+        return -1
+
+    try:
         
         dce = DE_Eliminator2()
         dce.eliminate(control_flow_graph)
 
         write_output(control_flow_graph, warnings, file_path)
-    
+
     except Exception as ex:
-        warnings = get_warnings(p)
-        if warnings is not None:
-            print(warnings)
-        print(ex)
+        print(f'\n\n\nException occurred during DCE: {ex}')
         return -1
+    
+    
         
     return 0
 
