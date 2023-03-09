@@ -3,7 +3,7 @@ from main_project.parser import Parser
 from main_project.file_reader import File_Reader, File_Writer
 import argparse
 from main_project.dot_graph import Dot_Graph as dot
-from main_project.dead_code_emilinator import DE_Eliminator
+from main_project.dead_code_emilinator2 import DE_Eliminator2
 from subprocess import Popen, PIPE
 
 def copy_clipboard(msg):
@@ -35,7 +35,7 @@ def compile():
         control_flow_graph = p.parse()
 
         '''
-        dce = DE_Eliminator()
+        dce = DE_Eliminator2()
         dce.eliminate(control_flow_graph)
         '''
 

@@ -6,13 +6,11 @@ class DE_Eliminator2:
         self.called_for = None
 
     def eliminate(self, graph, noshow = False):
-        ordered_blocks = graph.sort_blocks()
-
         to_delete = set()
         usage = set()
-        ops = [IR_OP.add, IR_OP.sub, IR_OP.mul, IR_OP.div, IR_OP.const, IR_OP.load, IR_OP.adda]
+        ops = [IR_OP.add, IR_OP.sub, IR_OP.mul, IR_OP.div, IR_OP.const, IR_OP.load, IR_OP.adda, IR_OP.phi]
 
-        for block in ordered_blocks:
+        for block in reversed(graph.ordered_blocks):
             for instruction in reversed(block.get_instructions()):
                 if instruction in usage or instruction.op_code not in ops:
                     if isinstance(instruction, IR_One_Operand) and isinstance(instruction.operand, IR):

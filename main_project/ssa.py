@@ -8,9 +8,9 @@ class SSA_Engine:
         self.uninitialized_instruction = IR_One_Operand(opc.undefined, 0) # 0 is default value of all numbers
         self.__cfg = Control_Flow_Graph()
         self.__root_block = self.__cfg.get_root()
-        self.__root_block.processing_started()
+        self.__cfg.ordered_blocks.append(self.__root_block)
         self.__current_block = self.__cfg.get_new_block()
-        self.__current_block.processing_started()
+        self.__cfg.ordered_blocks.append(self.__current_block)
         self.__current_block.set_dominator_block(self.__root_block)
         self.__root_block.fall_through_block = self.__current_block
         self.__control_flow_main_blocks = []
@@ -78,7 +78,7 @@ class SSA_Engine:
         if len(self.__current_block.get_instructions()) > 0:
             prev = self.__current_block
             self.__current_block = self.__cfg.get_new_block()
-            self.__current_block.processing_started()
+            self.__cfg.ordered_blocks.append(self.__current_block)
             self.__current_block.set_dominator_block(prev)
             prev.fall_through_block = self.__current_block
 
@@ -124,7 +124,7 @@ class SSA_Engine:
     # sets current working block to fall through block
         self.__current_block = self.__current_block.fall_through_block        
         self.__current_block.set_dominator_block(self.__current_block.get_dominator_block())
-        self.__current_block.processing_started()
+        self.__cfg.ordered_blocks.append(self.__current_block)
 
     def end_fall_through(self):
     # adds branch instruction if current block is a fall through block. This is done to prevent branch block instructions
@@ -141,7 +141,7 @@ class SSA_Engine:
         main_block = self.__control_flow_main_blocks[-1]
 
         self.__current_block = main_block.branch_block
-        self.__current_block.processing_started()
+        self.__cfg.ordered_blocks.append(self.__current_block)
 
         if prev_current != self.__current_block.get_dominator_block().fall_through_block:
             prev_current.fall_through_block = self.__current_block.join_block
@@ -155,7 +155,7 @@ class SSA_Engine:
             join_block = main_block.fall_through_block.join_block
             self.__current_block.fall_through_block = join_block
         self.__current_block = join_block
-        self.__current_block.processing_started()
+        self.__cfg.ordered_blocks.append(self.__current_block)
 
     def end_control_flow(self, left, right, join_block):
         self.__control_flow_main_blocks.pop()
@@ -315,6 +315,7 @@ class SSA_Engine:
         join_block.killed_arrays.clear()
 
     def end_loop_control_flow(self, right, join_block):
+        self.__cfg.ordered_blocks.append(join_block)
         self.__control_flow_main_blocks.pop()
         self.__all_join_blocks.pop()
         self.__only_while_join_blocks.pop()
@@ -330,7 +331,7 @@ class SSA_Engine:
         self.__propagate_kill_loop(join_block)
 
         self.__current_block = right
-        self.__current_block.processing_started()
+        self.__cfg.ordered_blocks.append(self.__current_block)
         self.__current_block.symbol_table = join_block.symbol_table
 
     def create_instruction(self, opcode, operand1 = None, operand2 = None):

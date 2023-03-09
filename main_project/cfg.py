@@ -6,6 +6,7 @@ class Control_Flow_Graph:
         self.__root = Basic_Block()
         self.__blocks = []
         self.__blocks.append(self.__root)
+        self.ordered_blocks = []
 
     def get_new_block(self):
     # create and returns a new block
@@ -20,11 +21,6 @@ class Control_Flow_Graph:
     def get_blocks(self):
     # returns root block
         return self.__blocks
-
-    def sort_blocks(self):
-        temp_list = self.__blocks.copy()
-        temp_list.sort(key=lambda block: block.processing_order, reverse=True)
-        return temp_list
     
     def __delete_empty_blocks(self):
         to_delete = []
@@ -57,19 +53,12 @@ class Basic_Block:
 # Class to represent basic block.
 # All instructions in a basic block are executed together as a whole.
     __next_block_num = 0
-    __next_processing_order = 1
 
     @staticmethod
     def get_next_ir_number():
         num = Basic_Block.__next_block_num
         Basic_Block.__next_block_num += 1
         return num
-
-    def processing_started(self):
-        if self.processing_order is None:
-            num = Basic_Block.__next_processing_order
-            Basic_Block.__next_processing_order += 1
-            self.processing_order = num
 
     def __init__(self, dominant_block = None):
         self.__name = f'BB{Basic_Block.get_next_ir_number()}'
@@ -80,7 +69,6 @@ class Basic_Block:
         self.__instructions = []
         self.symbol_table = {}
         self.set_dominator_block(dominant_block)
-        self.processing_order = None
         self.killed_arrays = set()
         self.temp_kills = set()
 
