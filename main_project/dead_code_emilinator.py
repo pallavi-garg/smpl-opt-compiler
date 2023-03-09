@@ -67,38 +67,41 @@ class DE_Eliminator:
 
         for load in defs:
             if load.op_code == IR_OP.load:
-                all_unused = len(use_chain[load]) > 0
-                for use in use_chain[load]:
-                    if use.eliminated == False:
-                        all_unused = False
-                        break
-                if all_unused and load not in used_in_phi:
-                    load.eliminated = all_unused
-                    if noshow and load.eliminated:
-                        load.get_container().remove_instruction(load)
-                    if all_unused:
-                        load.operand.eliminated = True
-                        if noshow and load.operand.eliminated:
-                            load.operand.get_container().remove_instruction(load.operand)
-                        all_unused = len(use_chain[load.operand.operand1]) > 0
-                        for use in use_chain[load.operand.operand1]:
-                            if use.eliminated == False:
-                                all_unused = False
-                                break
-                        load.operand.operand1.eliminated = all_unused
-                        if noshow and load.operand.operand1.eliminated:
-                            load.operand.operand1.get_container().remove_instruction(load.operand.operand1)
+                if load in use_chain:
+                    all_unused = len(use_chain[load]) > 0
+                    for use in use_chain[load]:
+                        if use.eliminated == False:
+                            all_unused = False
+                            break
+                    if all_unused and load not in used_in_phi:
+                        load.eliminated = all_unused
+                        if noshow and load.eliminated:
+                            load.get_container().remove_instruction(load)
+                        if all_unused:
+                            load.operand.eliminated = True
+                            if noshow and load.operand.eliminated:
+                                load.operand.get_container().remove_instruction(load.operand)
+                            if load.operand.operand1 in use_chain:
+                                all_unused = len(use_chain[load.operand.operand1]) > 0
+                                for use in use_chain[load.operand.operand1]:
+                                    if use.eliminated == False:
+                                        all_unused = False
+                                        break
+                                load.operand.operand1.eliminated = all_unused
+                                if noshow and load.operand.operand1.eliminated:
+                                    load.operand.operand1.get_container().remove_instruction(load.operand.operand1)
                     
         for instruction in defs:
             if instruction in use_chain:
-                all_unused = len(use_chain[instruction]) > 0
-                for use in use_chain[instruction]:
-                    if use.eliminated == False:
-                        all_unused = False
-                        break
-                instruction.eliminated = all_unused
-                if noshow and instruction.eliminated:
-                    instruction.get_container().remove_instruction(instruction)
+                if instruction in use_chain:
+                    all_unused = len(use_chain[instruction]) > 0
+                    for use in use_chain[instruction]:
+                        if use.eliminated == False:
+                            all_unused = False
+                            break
+                    instruction.eliminated = all_unused
+                    if noshow and instruction.eliminated:
+                        instruction.get_container().remove_instruction(instruction)
 
             
     
