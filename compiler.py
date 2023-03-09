@@ -25,31 +25,24 @@ def compile():
     arg_parser = argparse.ArgumentParser(description="Compiles code of smpl language.")
     arg_parser.add_argument("file_path", help="Path of the file to compile.")
     args = arg_parser.parse_args()
-
-    reader = File_Reader(args.file_path)
+    file_path = args.file_path
+    reader = File_Reader(file_path)
     
     #reader = File_Reader('/home/pallavi/workspace/Compiler/Compiler-Py/smpl-opt-compiler/testfiles/test.smpl')
     p = Parser(reader.get_contents())
 
     try:
         control_flow_graph = p.parse()
+        warnings = get_warnings(p)
+
+        write_output(control_flow_graph, warnings, file_path)
 
         '''
         dce = DE_Eliminator2()
         dce.eliminate(control_flow_graph)
+
+        write_output(control_flow_graph, warnings, file_path)
         '''
-
-        warnings = get_warnings(p)
-        dot_graph = dot()
-        output = dot_graph.get_representation(control_flow_graph)
-        if warnings is not None:
-            print(warnings)
-        print(output)
-        writer = File_Writer()
-        writer.write(args.file_path, warnings, output)
-
-        #Only supported on linux
-        copy_clipboard(output)
     
     except Exception as ex:
         warnings = get_warnings(p)
@@ -59,6 +52,18 @@ def compile():
         return -1
         
     return 0
+
+def write_output(control_flow_graph, warnings, file_path):
+    dot_graph = dot()
+    output = dot_graph.get_representation(control_flow_graph)
+    if warnings is not None:
+        print(warnings)
+    print(output)
+    writer = File_Writer()
+    writer.write(file_path, warnings, output)
+
+    #Only supported on linux
+    copy_clipboard(output)
 
 if __name__ == "__main__":
     sys.exit(compile())
