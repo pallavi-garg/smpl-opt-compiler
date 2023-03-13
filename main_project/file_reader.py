@@ -15,14 +15,17 @@ class File_Reader:
 
 class File_Writer:
 
-    def write(self, path, warnings, content):
+    def write(self, path, title, warnings, notes, content, mode = 'w'):
         path = path[0:-5] + "_output.txt"
         try:
-            with open(path, 'w') as file:
+            with open(path, mode) as file:
                 if warnings is not None:
                     file.writelines(warnings)
-                    file.writelines("\n\n")
+
+                file.writelines(f'\n\n-----{title}-----\n\n')
                 file.writelines(content)
+                if notes is not None:
+                    file.writelines(notes)
 
         except BaseException:
             pass

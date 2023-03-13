@@ -1,9 +1,10 @@
 from .intermediate_representation import IR_One_Operand, IR_OP, IR_Two_Operand, IR
+from .cfg import Basic_Block
 
 class DE_Eliminator2:        
 
     def __init__(self):
-        self.called_for = None
+        self.notes = {}
 
     def eliminate(self, graph, noshow = False):
         usage = set()
@@ -13,6 +14,8 @@ class DE_Eliminator2:
         phi_chains = {}
 
         for block in reversed(graph.ordered_blocks):
+            if block not in self.notes:
+                self.notes[block] = []
             for instruction in reversed(block.get_instructions()):
                 defs.add(instruction)
                 if instruction in usage or instruction.op_code not in ops:
@@ -45,12 +48,31 @@ class DE_Eliminator2:
         for phi in phi_chains:
             if phi in usage:
                 usage = usage.union(phi_chains[phi])
+
+        #ops.append(IR_OP.kill)
                 
         for instruction in defs:
             if instruction.op_code in ops and instruction not in usage:
                 instruction.eliminated = True
                 if noshow == True:
-                    instruction.get_container().remove_instruction(instruction)
+                    block = instruction.get_container()
+                    block.remove_instruction(instruction)
+                    self.notes[block].append(instruction)
+        
+        for instruction in defs:
+            if isinstance(instruction, IR_One_Operand) and  isinstance(instruction.operand, Basic_Block):
+                instruction.operand = self.__get_instruction(instruction.operand)
+            elif isinstance(instruction, IR_Two_Operand) and  isinstance(instruction.operand2, Basic_Block):
+                instruction.operand2 = self.__get_instruction(instruction.operand2)
+
+    def __get_instruction(self, block):
+        instruction = block
+        for i in block.get_instructions():
+            if i.eliminated == False:
+                instruction = i
+                break
+        return instruction
+
             
     
             

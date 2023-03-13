@@ -14,10 +14,10 @@ def copy_clipboard(msg):
 def get_warnings(parser):
     warnings = None
     if len(parser.warnings) > 0:
-        warnings = f"-------Warnings------"
+        warnings = f"\n-------Warnings-------\n"
         for warning in parser.warnings:
             warnings = f"{warnings}\n{warning}"
-        warnings = f"{warnings}\n---------------------\n"
+        warnings = f"{warnings}\n\n---------------------\n"
     return warnings
 
 def compile():
@@ -37,7 +37,7 @@ def compile():
         control_flow_graph = p.parse()
         warnings = get_warnings(p)
 
-        write_output(control_flow_graph, warnings, file_path)
+        write_output(control_flow_graph, warnings, None, file_path, 'SSA')
 
     except Exception as ex:
         warnings = get_warnings(p)
@@ -49,9 +49,16 @@ def compile():
     try:
         
         dce = DE_Eliminator2()
-        dce.eliminate(control_flow_graph)
+        dce.eliminate(control_flow_graph, True)
+        notes = '\n\n-----Eliminated following instructions-----\n'
 
-        write_output(control_flow_graph, warnings, file_path)
+        for note in dce.notes:
+            if len(dce.notes[note]) > 0:
+                notes = notes + f'{note}:\n'
+                for r in dce.notes[note]:
+                    notes = notes + f'{r}\n'
+
+        write_output(control_flow_graph, '', notes, file_path, 'After DCE', 'a')
 
     except Exception as ex:
         print(f'\n\n\nException occurred during DCE: {ex}')
@@ -61,14 +68,15 @@ def compile():
         
     return 0
 
-def write_output(control_flow_graph, warnings, file_path):
+def write_output(control_flow_graph, warnings, notes, file_path, title, mode = 'w'):
     dot_graph = dot()
     output = dot_graph.get_representation(control_flow_graph)
     if warnings is not None:
         print(warnings)
     print(output)
+    print(notes)
     writer = File_Writer()
-    writer.write(file_path, warnings, output)
+    writer.write(file_path, title, warnings, notes, output, mode)
 
     #Only supported on linux
     copy_clipboard(output)

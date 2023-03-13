@@ -61,7 +61,8 @@ class Basic_Block:
         return num
 
     def __init__(self, dominant_block = None):
-        self.__name = f'BB{Basic_Block.get_next_ir_number()}'
+        self.__number = Basic_Block.get_next_ir_number()
+        self.__name = f'BB{self.__number}'
         self.first_instruction_number = -1
         self.fall_through_block = None
         self.branch_block = None
@@ -101,3 +102,6 @@ class Basic_Block:
         if instruction in self.__instructions:
             self.__instructions.remove(instruction)
         instruction.isdeleted = True
+
+    def __hash__(self) -> int:
+        return self.__number
