@@ -265,6 +265,7 @@ class SSA_Engine:
         blocks = self.__cfg.get_blocks()
         for block in reversed(blocks):
             if block == join_block:
+                all_blocks.append(block)
                 break
             all_blocks.append(block)
 
@@ -290,24 +291,22 @@ class SSA_Engine:
 
             else:
                 for block in reversed(all_blocks):
-                    if block == join_block:
-                        break
                     for block_instruction in block.get_instructions():
                         if block_instruction.op_code == original_instruction.op_code and block_instruction != original_instruction:
                             dupe_instruction = self.__search_ds.get_next(block_instruction)
                             if dupe_instruction is not None:
                                 for used in block_instruction.use_chain:
                                     if isinstance(used, IR_One_Operand) and used.operand == block_instruction:
-                                        used.operand = original_instruction
+                                        used.operand = dupe_instruction
                                         self.common_sub_expression_candidates.append(used)
                                         used.operand.use_chain.append(used)
                                     if isinstance(used, IR_Two_Operand):
                                         if used.operand1 == block_instruction:
-                                            used.operand1 = original_instruction
+                                            used.operand1 = dupe_instruction
                                             self.common_sub_expression_candidates.append(used)
                                             used.operand1.use_chain.append(used)
                                         if used.operand2 == block_instruction:
-                                            used.operand2 = original_instruction
+                                            used.operand2 = dupe_instruction
                                             self.common_sub_expression_candidates.append(used)
                                             used.operand2.use_chain.append(used)
                                 to_delete.add(block_instruction)

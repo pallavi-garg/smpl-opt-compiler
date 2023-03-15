@@ -1,0 +1,17 @@
+main var a,b,c; {
+    let a <- 1;
+
+    while a + 1 < 1 + 1 do
+        if a < 10 then
+            while a < 10 do
+                let b <- a + 1;
+                let c <- b + 1;
+                if a < 10 
+                    then
+                        let b <- 1 + 1 ;
+                        let c <- b + 1;
+                    fi
+            od
+        fi
+    od
+}.

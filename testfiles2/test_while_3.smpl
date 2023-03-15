@@ -1,0 +1,19 @@
+main 
+var a,b; 
+array[5] arr;
+{
+    let a <- 1;
+    while a < 10 do
+        let b <- a + 1;
+        call OutputNum(arr[b]);
+        if a < 10 then
+            let b <- 1 + 1;
+            call OutputNum(arr[b]);
+        fi;
+        call OutputNum(b);
+        call OutputNum(arr[b]);
+        
+    od;
+    call OutputNum(b);
+    call OutputNum(arr[b]);
+}.
