@@ -25,4 +25,5 @@ array[4] a, b, c;
     call OutputNum(a[i]);
     call OutputNum(b[i]);
     call OutputNum(c[i]);
+    call OutputNum(c[a[x]]);
 }.

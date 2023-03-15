@@ -1,0 +1,20 @@
+main var a,f,g,z,c;{
+    let a <- 10;
+    if a < 11
+    then
+        let f <- 15 + 11;
+        if f == 26
+        then
+            let f <- (99-100) * 0;
+        fi
+    else
+        let g <- 5 / 2;
+        if g >= 2
+        then
+            let z <- 100-100;
+        else
+            let z <- 10-10;
+        fi;
+    fi;
+    let c <- 7 * 5;
+}.

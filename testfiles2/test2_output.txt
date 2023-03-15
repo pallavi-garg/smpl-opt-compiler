@@ -1,0 +1,13 @@
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (3) : const #0 }"];
+BB1 [shape=record, label="<b>BB1 | { (1) : read | (2) : add (1), (1) | (4) : cmp (1), (3) | (5) : bge (4), BB4(8) }"];
+BB2 [shape=record, label="<b>BB2 | { (6) : add (2), (2) | (7) : bra BB4(8) }"];
+BB4 [shape=record, label="<b>BB4 | { (8) : phi (6), (1) --- a | (9) : phi (6), (2) --- d | (10) : write (8) | (11) : end }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+BB1:s -> BB2 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:b -> BB2:b [color=purple, style=dotted, fontcolor=purple]
+BB2:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB4:b [color=purple, style=dotted, fontcolor=purple]
+}

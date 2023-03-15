@@ -1,0 +1,31 @@
+-------Warnings------
+Warning at line:20 -> Using uninitialized variable 'c'
+Warning at line:21 -> Using uninitialized variable 'd'
+Warning at line:22 -> Using uninitialized variable 'e'
+Warning at line:23 -> Using uninitialized variable 'f'
+---------------------
+
+
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (2) : const #1 | (4) : const #0 | (7) : const #2 | (10) : const #3 | (13) : const #7 | (17) : const #4 }"];
+BB1 [shape=record, label="<b>BB1 | { (1) : read | (3) : add (1), (2) | (5) : cmp (1), (4) | (6) : ble (5), BB4(20) }"];
+BB2 [shape=record, label="<b>BB2 | { (8) : add (1), (7) | (9) : ble (5), BB6(14) }"];
+BB4 [shape=record, label="<b>BB4 | { (20) : phi (8), (0?) --- c | (21) : phi (15), (0?) --- d | (22) : phi (18), (0?) --- e | (23) : phi (16), (0?) --- f | (24) : write (1) | (25) : write (3) | (26) : write (20) | (27) : write (21) | (28) : write (22) | (29) : write (23) | (30) : end }"];
+BB5 [shape=record, label="<b>BB5 | { (11) : add (1), (10) | (12) : bra BB7(15) }"];
+BB6 [shape=record, label="<b>BB6 | { (14) : add (1), (13) }"];
+BB7 [shape=record, label="<b>BB7 | { (15) : phi (11), (0?) --- d | (16) : phi (0?), (14) --- f | (18) : add (1), (17) | (19) : bra BB4(20) }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+BB1:s -> BB2 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:s -> BB6 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB2:b [color=purple, style=dotted, fontcolor=purple]
+BB2:s -> BB5 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:b -> BB4:b [color=purple, style=dotted, fontcolor=purple]
+BB2:b -> BB5:b [color=purple, style=dotted, fontcolor=purple]
+BB5:s -> BB7 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB2:b -> BB6:b [color=purple, style=dotted, fontcolor=purple]
+BB6:s -> BB7 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:b -> BB7:b [color=purple, style=dotted, fontcolor=purple]
+BB7:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+}

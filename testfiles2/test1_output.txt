@@ -1,0 +1,19 @@
+
+
+-----SSA-----
+
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (1) : const #at_#0_#20 | (3) : const #20 | (5) : const #2 }"];
+BB1 [shape=record, label="<b>BB1 | { (2) : read | (4) : mul (2), (3) | (6) : add (4), (5) | (7) : write (6) | (8) : end }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+}
+
+-----After DCE-----
+
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { dce- (1) : const #at_#0_#20 | (3) : const #20 | (5) : const #2 }"];
+BB1 [shape=record, label="<b>BB1 | { (2) : read | (4) : mul (2), (3) | (6) : add (4), (5) | (7) : write (6) | (8) : end }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+}

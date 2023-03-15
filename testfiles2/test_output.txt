@@ -1,0 +1,96 @@
+
+
+-----SSA-----
+
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (1) : const #10 | (2) : const #11 | (5) : const #15 | (7) : const #26 | (10) : const #99 | (11) : const #100 | (13) : const #0 | (18) : const #5 | (19) : const #2 | (30) : const #7 }"];
+BB1 [shape=record, label="<b>BB1 | { (3) : cmp (1), (2) | (4) : bge (3), BB3(20) }"];
+BB2 [shape=record, label="<b>BB2 | { (6) : add (5), (2) | (8) : cmp (6), (7) | (9) : bne (8), BB7(16) }"];
+BB3 [shape=record, label="<b>BB3 | { (20) : div (18), (19) | (21) : cmp (20), (19) | (22) : blt (21), BB9(25) }"];
+BB4 [shape=record, label="<b>BB4 | { (27) : phi (16), (0?) --- f | (28) : phi (0?), (20) --- g | (29) : phi (0?), (26) --- z | (31) : mul (30), (18) | (32) : end }"];
+BB5 [shape=record, label="<b>BB5 | { (12) : sub (10), (11) | (14) : mul (12), (13) | (15) : bra BB7(16) }"];
+BB7 [shape=record, label="<b>BB7 | { (16) : phi (14), (6) --- f | (17) : bra BB4(27) }"];
+BB8 [shape=record, label="<b>BB8 | { (23) : sub (11), (11) | (24) : bra BB10(26) }"];
+BB9 [shape=record, label="<b>BB9 | { (25) : sub (1), (1) }"];
+BB10 [shape=record, label="<b>BB10 | { (26) : phi (23), (25) --- z }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:s -> BB3 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+BB1:s -> BB2 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:s -> BB7 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB2:b [color=purple, style=dotted, fontcolor=purple]
+BB2:s -> BB5 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB3:s -> BB9 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB3:b [color=purple, style=dotted, fontcolor=purple]
+BB3:s -> BB8 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:b -> BB4:b [color=purple, style=dotted, fontcolor=purple]
+BB2:b -> BB5:b [color=purple, style=dotted, fontcolor=purple]
+BB5:s -> BB7 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB2:b -> BB7:b [color=purple, style=dotted, fontcolor=purple]
+BB7:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB3:b -> BB8:b [color=purple, style=dotted, fontcolor=purple]
+BB8:s -> BB10 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB3:b -> BB9:b [color=purple, style=dotted, fontcolor=purple]
+BB9:s -> BB10 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB3:b -> BB10:b [color=purple, style=dotted, fontcolor=purple]
+BB10:s -> BB4 [label=" follow", color=darkblue, fontcolor=darkblue];
+}
+
+-----After DCE-----
+
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (1) : const #10 | (2) : const #11 | (5) : const #15 | (7) : const #26 | (18) : const #5 | (19) : const #2 }"];
+BB1 [shape=record, label="<b>BB1 | { (3) : cmp (1), (2) | (4) : bge (3), (20) }"];
+BB2 [shape=record, label="<b>BB2 | { (6) : add (5), (2) | (8) : cmp (6), (7) | (9) : bne (8), (17) }"];
+BB3 [shape=record, label="<b>BB3 | { (20) : div (18), (19) | (21) : cmp (20), (19) | (22) : blt (21), BB9 }"];
+BB4 [shape=record, label="<b>BB4 | { (32) : end }"];
+BB5 [shape=record, label="<b>BB5 | { (15) : bra (17) }"];
+BB7 [shape=record, label="<b>BB7 | { (17) : bra (32) }"];
+BB8 [shape=record, label="<b>BB8 | { (24) : bra BB10 }"];
+BB9 [shape=record, label="<b>BB9 | {\<empty\>}"];
+BB10 [shape=record, label="<b>BB10 | {\<empty\>}"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:s -> BB3 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+BB1:s -> BB2 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:s -> BB7 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB2:b [color=purple, style=dotted, fontcolor=purple]
+BB2:s -> BB5 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB3:s -> BB9 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB3:b [color=purple, style=dotted, fontcolor=purple]
+BB3:s -> BB8 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:b -> BB4:b [color=purple, style=dotted, fontcolor=purple]
+BB2:b -> BB5:b [color=purple, style=dotted, fontcolor=purple]
+BB5:s -> BB7 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:b -> BB7:b [color=purple, style=dotted, fontcolor=purple]
+BB7:s -> BB4 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB3:b -> BB8:b [color=purple, style=dotted, fontcolor=purple]
+BB8:s -> BB10 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB3:b -> BB9:b [color=purple, style=dotted, fontcolor=purple]
+BB9:s -> BB10 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB3:b -> BB10:b [color=purple, style=dotted, fontcolor=purple]
+BB10:s -> BB4 [label=" follow", color=darkblue, fontcolor=darkblue];
+}
+
+-----Eliminated following instructions-----
+BB4:
+(27) : phi (16), (0?) --- f
+(28) : phi (0?), (20) --- g
+(29) : phi (0?), (26) --- z
+(31) : mul (30), (18)
+BB10:
+(26) : phi (23), (25) --- z
+BB9:
+(25) : sub (1), (1)
+BB8:
+(23) : sub (11), (11)
+BB7:
+(16) : phi (14), (6) --- f
+BB5:
+(12) : sub (10), (11)
+(14) : mul (12), (13)
+BB0:
+(10) : const #99
+(11) : const #100
+(13) : const #0
+(30) : const #7

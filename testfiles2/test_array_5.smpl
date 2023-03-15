@@ -2,23 +2,20 @@ main
 var i, x;
 array[4] a, b, c;
 {
+    let i <- a[1];
     let i <- 1;
-    call OutputNum(a[1]);
     call OutputNum(b[1]);
     if i != 1
     then
-        while a[1] + b[1] == 0 do
+        while b[1] == 0 do
             let x <- x - 1;
-            call OutputNum(a[1]);
             call OutputNewLine();
         od;
 
-        while a[1] < 0 do
-            let a[1] <- x - 1;
-            call OutputNum(a[1]);
+        while b[1] < 0 do
+            let b[1] <- x - 1;
         od;
     fi;
-    call OutputNum(a[1]);
     call OutputNewLine();
     call OutputNum(b[1]);
 }.

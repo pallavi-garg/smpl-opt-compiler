@@ -1,0 +1,51 @@
+
+
+-----SSA-----
+
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (1) : const #arrA_#0_#20 | (2) : const #x_#20_#20 | (3) : const #10 | (4) : const #1 | (5) : const #90 | (6) : const #4 | (8) : const #BASE | (15) : const #9000 | (21) : const #5 | (25) : const #7 | (29) : const #190 }"];
+BB1 [shape=record, label="<b>BB1 | { (7) : mul (4), (6) | (9) : add (8), (1) | (10) : adda (9), (7) | (11) : store (5), (10) --- arrA | (12) : adda (9), (7) | (13) : load (12) ---arrA | (14) : write (13) | (16) : adda (9), (7) | (17) : store (15), (16) --- arrA | (18) : adda (9), (7) | (19) : load (18) ---arrA | (20) : write (19) | (22) : cmp (3), (21) | (23) : bge (22), BB4(42) }"];
+BB2 [shape=record, label="<b>BB2 | { (24) : write (19) | (26) : cmp (3), (25) | (27) : bge (26), BB7(37) }"];
+BB4 [shape=record, label="<b>BB4 | { dce- (41) : kill (1) | (42) : adda (9), (7) | (43) : load (42) ---arrA | (44) : write (43) | (45) : end }"];
+BB5 [shape=record, label="<b>BB5 | { (28) : write (19) | (30) : adda (9), (7) | (31) : store (29), (30) --- arrA | (32) : adda (9), (7) | (33) : load (32) ---arrA | (34) : write (33) | (35) : bra BB7(37) }"];
+BB7 [shape=record, label="<b>BB7 | { dce- (36) : kill (1) | (37) : adda (9), (7) | (38) : load (37) ---arrA | (39) : write (38) | (40) : bra BB4(42) }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+BB1:s -> BB2 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:s -> BB7 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB2:b [color=purple, style=dotted, fontcolor=purple]
+BB2:s -> BB5 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:b -> BB4:b [color=purple, style=dotted, fontcolor=purple]
+BB2:b -> BB5:b [color=purple, style=dotted, fontcolor=purple]
+BB5:s -> BB7 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB2:b -> BB7:b [color=purple, style=dotted, fontcolor=purple]
+BB7:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+}
+
+-----After DCE-----
+
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (1) : const #arrA_#0_#20 | (3) : const #10 | (4) : const #1 | (5) : const #90 | (6) : const #4 | (8) : const #BASE | (15) : const #9000 | (21) : const #5 | (25) : const #7 | (29) : const #190 }"];
+BB1 [shape=record, label="<b>BB1 | { (7) : mul (4), (6) | (9) : add (8), (1) | (10) : adda (9), (7) | (11) : store (5), (10) --- arrA | (12) : adda (9), (7) | (13) : load (12) ---arrA | (14) : write (13) | (16) : adda (9), (7) | (17) : store (15), (16) --- arrA | (18) : adda (9), (7) | (19) : load (18) ---arrA | (20) : write (19) | (22) : cmp (3), (21) | (23) : bge (22), (42) }"];
+BB2 [shape=record, label="<b>BB2 | { (24) : write (19) | (26) : cmp (3), (25) | (27) : bge (26), (37) }"];
+BB4 [shape=record, label="<b>BB4 | { dce- (41) : kill (1) | (42) : adda (9), (7) | (43) : load (42) ---arrA | (44) : write (43) | (45) : end }"];
+BB5 [shape=record, label="<b>BB5 | { (28) : write (19) | (30) : adda (9), (7) | (31) : store (29), (30) --- arrA | (32) : adda (9), (7) | (33) : load (32) ---arrA | (34) : write (33) | (35) : bra (37) }"];
+BB7 [shape=record, label="<b>BB7 | { dce- (36) : kill (1) | (37) : adda (9), (7) | (38) : load (37) ---arrA | (39) : write (38) | (40) : bra (42) }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+BB1:s -> BB2 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:s -> BB7 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB2:b [color=purple, style=dotted, fontcolor=purple]
+BB2:s -> BB5 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:b -> BB4:b [color=purple, style=dotted, fontcolor=purple]
+BB2:b -> BB5:b [color=purple, style=dotted, fontcolor=purple]
+BB5:s -> BB7 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:b -> BB7:b [color=purple, style=dotted, fontcolor=purple]
+BB7:s -> BB4 [label=" follow", color=darkblue, fontcolor=darkblue];
+}
+
+ ----Eliminated following instructions----
+BB0:
+(2) : const #x_#20_#20

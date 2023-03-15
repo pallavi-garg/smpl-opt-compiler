@@ -1,0 +1,25 @@
+-------Warnings------
+Warning at line:12 -> Using uninitialized variable 'x'
+---------------------
+
+
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (2) : const #0 | (5) : const #1 }"];
+BB1 [shape=record, label="<b>BB1 | { (1) : read | (3) : cmp (1), (2) | (4) : bge (3), BB4(13) }"];
+BB2 [shape=record, label="<b>BB2 | { (6) : add (1), (5) | (7) : cmp (6), (2) | (8) : ble (7), BB7(11) }"];
+BB4 [shape=record, label="<b>BB4 | { (13) : phi (11), (0?) --- x | (14) : write (13) | (15) : write (1) | (16) : end }"];
+BB5 [shape=record, label="<b>BB5 | { (9) : sub (1), (5) | (10) : bra BB7(11) }"];
+BB7 [shape=record, label="<b>BB7 | { (11) : phi (9), (6) --- x | (12) : bra BB4(13) }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+BB1:s -> BB2 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:s -> BB7 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB2:b [color=purple, style=dotted, fontcolor=purple]
+BB2:s -> BB5 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:b -> BB4:b [color=purple, style=dotted, fontcolor=purple]
+BB2:b -> BB5:b [color=purple, style=dotted, fontcolor=purple]
+BB5:s -> BB7 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB2:b -> BB7:b [color=purple, style=dotted, fontcolor=purple]
+BB7:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+}

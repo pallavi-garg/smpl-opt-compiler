@@ -1,0 +1,33 @@
+-------Warnings------
+Warning at line:10 -> Using uninitialized variable 'x'
+Warning at line:16 -> Using uninitialized variable 'x'
+---------------------
+
+
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (1) : const #a_#0_#16 | (2) : const #b_#16_#16 | dce- (3) : const #c_#32_#16 | (4) : const #1 | (5) : const #4 | (7) : const #BASE | (19) : const #0 }"];
+BB1 [shape=record, label="<b>BB1 | { (6) : mul (4), (5) | (8) : add (7), (1) | (9) : adda (8), (6) | (10) : load (9) ---a | (11) : write (10) | (12) : cmp (4), (4) | (13) : bne (12), BB4(55) }"];
+BB2 [shape=record, label="<b>BB2 | { dce- (16) : kill (1) | (17) : adda (8), (6) | (18) : load (17) ---a | (20) : cmp (18), (19) | (21) : blt (20), BB6(37) }"];
+BB4 [shape=record, label="<b>BB4 | { dce- (54) : kill (1) | (55) : adda (8), (6) | (56) : load (55) ---a | (57) : write (56) | (58) : add (7), (2) | (59) : adda (58), (6) | (60) : load (59) ---b | (61) : write (60) | (62) : end }"];
+BB5 [shape=record, label="<b>BB5 | { (22) : sub (0?), (4) | (23) : adda (8), (6) | (24) : store (22), (23) --- a | (25) : adda (8), (6) | (26) : load (25) ---a | (27) : write (26) | (28) : add (7), (2) | (30) : adda (28), (6) | (31) : load (30) ---b | (32) : write (31) | (33) : bra BB2(17) }"];
+BB6 [shape=record, label="<b>BB6 | { dce- (36) : kill (1) | (37) : adda (8), (6) | (38) : load (37) ---a | (39) : cmp (38), (19) | (40) : blt (39), BB8(53) }"];
+BB7 [shape=record, label="<b>BB7 | { (41) : sub (0?), (4) | (42) : adda (8), (6) | (43) : store (41), (42) --- a | (44) : adda (8), (6) | (45) : load (44) ---a | (46) : write (45) | (47) : add (7), (2) | (49) : adda (47), (6) | (50) : load (49) ---b | (51) : write (50) | (52) : bra BB6(37) }"];
+BB8 [shape=record, label="<b>BB8 | { (53) : bra BB4(55) }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+BB1:s -> BB2 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:s -> BB6 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB2:b [color=purple, style=dotted, fontcolor=purple]
+BB2:s -> BB5 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:b -> BB4:b [color=purple, style=dotted, fontcolor=purple]
+BB5:s -> BB2:n [label=" loop", color=brown, fontcolor=brown];
+BB2:b -> BB5:b [color=purple, style=dotted, fontcolor=purple]
+BB6:s -> BB8 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB2:b -> BB6:b [color=purple, style=dotted, fontcolor=purple]
+BB6:s -> BB7 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB7:s -> BB6:n [label=" loop", color=brown, fontcolor=brown];
+BB6:b -> BB7:b [color=purple, style=dotted, fontcolor=purple]
+BB6:b -> BB8:b [color=purple, style=dotted, fontcolor=purple]
+BB8:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+}

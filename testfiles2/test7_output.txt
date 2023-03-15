@@ -1,0 +1,27 @@
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (3) : const #0 | (10) : const #99 | (14) : const #35 }"];
+BB1 [shape=record, label="<b>BB1 | { (1) : read | (2) : add (1), (1) | (4) : cmp (1), (3) | (5) : bge (4), BB4(8) }"];
+BB2 [shape=record, label="<b>BB2 | { (6) : add (2), (2) | (7) : bra BB4(8) }"];
+BB4 [shape=record, label="<b>BB4 | { (8) : phi (6), (1) --- a | (9) : phi (6), (2) --- d | (11) : cmp (10), (3) | (12) : bge (11), BB7(21) }"];
+BB5 [shape=record, label="<b>BB5 | { (13) : add (9), (2) | (15) : cmp (13), (14) | (16) : ble (15), BB10(19) }"];
+BB7 [shape=record, label="<b>BB7 | { (21) : phi (19), (10) --- a | (22) : phi (13), (2) --- d | (23) : write (21) | (24) : end }"];
+BB8 [shape=record, label="<b>BB8 | { (17) : mul (14), (13) | (18) : bra BB10(19) }"];
+BB10 [shape=record, label="<b>BB10 | { (19) : phi (17), (13) --- a | (20) : bra BB7(21) }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+BB1:s -> BB2 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB1:b -> BB2:b [color=purple, style=dotted, fontcolor=purple]
+BB2:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB4:s -> BB7 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB4:b [color=purple, style=dotted, fontcolor=purple]
+BB4:s -> BB5 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB5:s -> BB10 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB4:b -> BB5:b [color=purple, style=dotted, fontcolor=purple]
+BB5:s -> BB8 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB4:b -> BB7:b [color=purple, style=dotted, fontcolor=purple]
+BB5:b -> BB8:b [color=purple, style=dotted, fontcolor=purple]
+BB8:s -> BB10 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB5:b -> BB10:b [color=purple, style=dotted, fontcolor=purple]
+BB10:s -> BB7 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+}

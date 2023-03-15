@@ -1,13 +1,15 @@
 main 
-var x,y,i,j; 
+var a,b; 
+array[5] arr;
 {
-    let i<-5; 
-    while x != 0 do
-        let i<-5; 
+    let a <- 1;
+    while a < 10 do
+        let b <- a + 1;
+        if a < 10 then
+            let b <- 1 + 1;
+        fi;
+        call OutputNum(b);
         
-		call OutputNum(x);
-        call OutputNum(y);
-        call OutputNum(i);
-        call OutputNum(j);
-    od; 
+    od;
+    call OutputNum(b);
 }.

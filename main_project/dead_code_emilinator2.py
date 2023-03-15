@@ -58,6 +58,9 @@ class DE_Eliminator2:
                     block = instruction.get_container()
                     block.remove_instruction(instruction)
                     self.notes[block].append(instruction)
+
+        if noshow == True:
+            graph.clean_up()
         
         for instruction in defs:
             if isinstance(instruction, IR_One_Operand) and  isinstance(instruction.operand, Basic_Block):

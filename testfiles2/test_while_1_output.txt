@@ -1,0 +1,41 @@
+
+
+-----SSA-----
+
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (2) : const #0 | (7) : const #10 | (10) : const #1 }"];
+BB1 [shape=record, label="<b>BB1 | { (1) : read }"];
+BB2 [shape=record, label="<b>BB2 | { (3) : phi (1), (11) --- i | (4) : phi (2), (12) --- x | (5) : phi (2), (13) --- y | (8) : cmp (4), (7) | (9) : bge (8), BB4(15) }"];
+BB3 [shape=record, label="<b>BB3 | { (11) : add (3), (10) | (12) : add (11), (10) | (13) : add (1), (10) | (14) : bra BB2(3) }"];
+BB4 [shape=record, label="<b>BB4 | { (15) : write (3) | (16) : write (4) | (17) : write (1) | (18) : write (5) | (19) : end }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+BB1:s -> BB2 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB2:b [color=purple, style=dotted, fontcolor=purple]
+BB2:s -> BB3 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB3:s -> BB2:n [label=" loop", color=brown, fontcolor=brown];
+BB2:b -> BB3:b [color=purple, style=dotted, fontcolor=purple]
+BB2:b -> BB4:b [color=purple, style=dotted, fontcolor=purple]
+}
+
+-----After DCE-----
+
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (2) : const #0 | (7) : const #10 | (10) : const #1 }"];
+BB1 [shape=record, label="<b>BB1 | { (1) : read }"];
+BB2 [shape=record, label="<b>BB2 | { (3) : phi (1), (11) --- i | (4) : phi (2), (12) --- x | (5) : phi (2), (13) --- y | (8) : cmp (4), (7) | (9) : bge (8), (15) }"];
+BB3 [shape=record, label="<b>BB3 | { (11) : add (3), (10) | (12) : add (11), (10) | (13) : add (1), (10) | (14) : bra (3) }"];
+BB4 [shape=record, label="<b>BB4 | { (15) : write (3) | (16) : write (4) | (17) : write (1) | (18) : write (5) | (19) : end }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+BB1:s -> BB2 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB2:b [color=purple, style=dotted, fontcolor=purple]
+BB2:s -> BB3 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB3:s -> BB2:n [label=" loop", color=brown, fontcolor=brown];
+BB2:b -> BB3:b [color=purple, style=dotted, fontcolor=purple]
+BB2:b -> BB4:b [color=purple, style=dotted, fontcolor=purple]
+}
+
+-----Eliminated following instructions-----

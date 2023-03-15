@@ -1,0 +1,33 @@
+digraph G {
+BB0 [shape=record, label="<b>BB0 | { (1) : const #arra_#0_#20 | (2) : const #b_#20_#20 | dce- (3) : const #c_#40_#20 | (5) : const #0 | (6) : const #1 | (7) : const #100 | (8) : const #4 | (10) : const #BASE | (21) : const #10 | (30) : const #2 | (31) : const #3 | (39) : const #110 | (49) : const #6 | (56) : const #11099 | (63) : const #17 }"];
+BB1 [shape=record, label="<b>BB1 | { (4) : read | (9) : mul (6), (8) | (11) : add (10), (1) | (12) : adda (11), (9) | (13) : store (7), (12) --- arra | (14) : adda (11), (9) | (15) : load (14) ---arra | (16) : write (15) }"];
+BB2 [shape=record, label="<b>BB2 | { dce- (35) : kill (1) | dce- (26) : kill (2) | (17) : phi (5), (24) --- x | dce- (18) : phi (5), (29) --- y | (19) : phi (4), (47) --- i | (22) : cmp (17), (21) | (23) : bge (22), BB4(71) }"];
+BB3 [shape=record, label="<b>BB3 | { (24) : add (19), (6) | (25) : add (10), (2) | dce- (27) : adda (25), (9) | dce- (28) : load (27) ---b | dce- (29) : add (28), (6) | (32) : add (30), (31) | (33) : adda (25), (9) | (34) : store (32), (33) --- b | (36) : adda (11), (9) | (37) : load (36) ---arra | (38) : write (37) | (40) : adda (11), (9) | (41) : store (39), (40) --- arra | (42) : adda (11), (9) | (43) : load (42) ---arra | (44) : write (43) }"];
+BB4 [shape=record, label="<b>BB4 | { (71) : write (17) | (72) : adda (11), (9) | (73) : load (72) ---arra | (74) : write (73) | (75) : end }"];
+BB5 [shape=record, label="<b>BB5 | { dce- (52) : kill (1) | (47) : phi (19), (62) --- i | (50) : cmp (24), (49) | (51) : bge (50), BB7(70) }"];
+BB6 [shape=record, label="<b>BB6 | { (53) : adda (11), (9) | (54) : load (53) ---arra | (55) : write (54) | (57) : adda (11), (9) | (58) : store (56), (57) --- arra | (59) : adda (11), (9) | (60) : load (59) ---arra | (61) : write (60) | (62) : add (47), (6) | (64) : cmp (62), (63) | (65) : bge (64), BB10(68) }"];
+BB7 [shape=record, label="<b>BB7 | { (70) : bra BB2(17) }"];
+BB8 [shape=record, label="<b>BB8 | { (66) : write (60) | (67) : bra BB10(68) }"];
+BB10 [shape=record, label="<b>BB10 | { (68) : write (60) | (69) : bra BB5(47) }"];
+BB0:s -> BB1 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB0:b -> BB1:b [color=purple, style=dotted, fontcolor=purple]
+BB1:s -> BB2 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:s -> BB4 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB1:b -> BB2:b [color=purple, style=dotted, fontcolor=purple]
+BB2:s -> BB3 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:b -> BB3:b [color=purple, style=dotted, fontcolor=purple]
+BB3:s -> BB5 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB2:b -> BB4:b [color=purple, style=dotted, fontcolor=purple]
+BB5:s -> BB7 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB3:b -> BB5:b [color=purple, style=dotted, fontcolor=purple]
+BB5:s -> BB6 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB6:s -> BB10 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB5:b -> BB6:b [color=purple, style=dotted, fontcolor=purple]
+BB6:s -> BB8 [label=" follow", color=darkblue, fontcolor=darkblue];
+BB7:s -> BB2:n [label=" loop", color=brown, fontcolor=brown];
+BB5:b -> BB7:b [color=purple, style=dotted, fontcolor=purple]
+BB6:b -> BB8:b [color=purple, style=dotted, fontcolor=purple]
+BB8:s -> BB10 [label=" branch", color=darkgreen, fontcolor=darkgreen];
+BB10:s -> BB5:n [label=" loop", color=brown, fontcolor=brown];
+BB6:b -> BB10:b [color=purple, style=dotted, fontcolor=purple]
+}
