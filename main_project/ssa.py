@@ -261,7 +261,12 @@ class SSA_Engine:
 
     def __common(self, join_block):
         to_delete = set()
-        all_blocks = self.__cfg.get_blocks()
+        all_blocks = []
+        blocks = self.__cfg.get_blocks()
+        for block in reversed(blocks):
+            if block == join_block:
+                break
+            all_blocks.append(block)
 
         while(len(self.common_sub_expression_candidates) > 0):
             original_instruction = self.common_sub_expression_candidates.pop()
@@ -287,7 +292,7 @@ class SSA_Engine:
                 for block in reversed(all_blocks):
                     if block == join_block:
                         break
-                    for block_instruction in reversed(block.get_instructions()):
+                    for block_instruction in block.get_instructions():
                         if block_instruction.op_code == original_instruction.op_code and block_instruction != original_instruction:
                             dupe_instruction = self.__search_ds.get_next(block_instruction)
                             if dupe_instruction is not None:
