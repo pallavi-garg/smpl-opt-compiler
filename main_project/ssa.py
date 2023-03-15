@@ -289,10 +289,7 @@ class SSA_Engine:
                         break
                     for block_instruction in reversed(block.get_instructions()):
                         if block_instruction.op_code == original_instruction.op_code and block_instruction != original_instruction:
-                            if isinstance(original_instruction, IR_One_Operand):
-                                dupe_instruction = self.__search_ds.get_next(block_instruction)
-                            elif isinstance(original_instruction, IR_Two_Operand):
-                                dupe_instruction = self.__search_ds.get_next(block_instruction)
+                            dupe_instruction = self.__search_ds.get_next(block_instruction)
                             if dupe_instruction is not None:
                                 for used in block_instruction.use_chain:
                                     if isinstance(used, IR_One_Operand) and used.operand == block_instruction:
