@@ -49,8 +49,8 @@ def compile():
     try:
         
         dce = DE_Eliminator2()
-        dce.eliminate(control_flow_graph, True)
-        notes = '\n\n-----Eliminated following instructions-----\n'
+        dce.eliminate(control_flow_graph, False)
+        notes = ''#'\n\n-----Eliminated following instructions-----\n'
 
         for note in dce.notes:
             if len(dce.notes[note]) > 0:
@@ -74,7 +74,8 @@ def write_output(control_flow_graph, warnings, notes, file_path, title, mode = '
     if warnings is not None:
         print(warnings)
     print(output)
-    print(notes)
+    if notes is not None:
+        print(notes)
     writer = File_Writer()
     writer.write(file_path, title, warnings, notes, output, mode)
 
