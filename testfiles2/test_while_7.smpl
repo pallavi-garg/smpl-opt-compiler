@@ -1,0 +1,21 @@
+main 
+var a,b; 
+array[5] arr;
+{
+    let a <- 1;
+    if a < 10 then
+        let b <- arr[a] + 1;
+        call OutputNum(a)
+    fi;
+    while a < 10 do
+        let b <- arr[a] + 1;
+        if a < 10 then
+            let b <- arr[a] + 1;
+        fi;
+        call OutputNum(b);
+        
+    od;
+    call OutputNum(b);
+}.
+
+#array should be loaded again
