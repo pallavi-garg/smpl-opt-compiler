@@ -25,13 +25,13 @@ def compile():
     arg_parser = argparse.ArgumentParser(description="Compiles code of smpl language.")
     arg_parser.add_argument("file_path", help="Path of the file to compile.")
     args = arg_parser.parse_args()
-    file_path = args.file_path
-    
+    file_path = args.file_path    
     
     #file_path = '/home/pallavi/workspace/Compiler/Compiler-Py/smpl-opt-compiler/testfiles/test.smpl'
     reader = File_Reader(file_path)
     
     p = Parser(reader.get_contents())
+    run_dce = True
 
     try:
         control_flow_graph = p.parse()
@@ -45,30 +45,30 @@ def compile():
             print(warnings)
         print(f'\nException occurred during SSA: {ex}')
         return -1
+    if run_dce:
+        try:
+            
+            dce = DE_Eliminator2()
+            dce.eliminate(control_flow_graph, False)
+            notes = ''#'\n\n-----Eliminated following instructions-----\n'
 
-    try:
-        
-        dce = DE_Eliminator2()
-        dce.eliminate(control_flow_graph, False)
-        notes = ''#'\n\n-----Eliminated following instructions-----\n'
+            for note in dce.notes:
+                if len(dce.notes[note]) > 0:
+                    notes = notes + f'{note}:\n'
+                    for r in dce.notes[note]:
+                        notes = notes + f'{r}\n'
 
-        for note in dce.notes:
-            if len(dce.notes[note]) > 0:
-                notes = notes + f'{note}:\n'
-                for r in dce.notes[note]:
-                    notes = notes + f'{r}\n'
+            write_output(control_flow_graph, warnings, notes, file_path, 'After DCE', 'a', 'dce')
 
-        write_output(control_flow_graph, '', notes, file_path, 'After DCE', 'a')
-
-    except Exception as ex:
-        print(f'\n\n\nException occurred during DCE: {ex}')
-        return -1
+        except Exception as ex:
+            print(f'\n\n\nException occurred during DCE: {ex}')
+            return -1
     
     
         
     return 0
 
-def write_output(control_flow_graph, warnings, notes, file_path, title, mode = 'w'):
+def write_output(control_flow_graph, warnings, notes, file_path, title, mode = 'w', suffix = ''):
     dot_graph = dot()
     output = dot_graph.get_representation(control_flow_graph)
     if warnings is not None:
@@ -77,7 +77,7 @@ def write_output(control_flow_graph, warnings, notes, file_path, title, mode = '
     if notes is not None:
         print(notes)
     writer = File_Writer()
-    writer.write(file_path, title, warnings, notes, output, mode)
+    writer.write(file_path, title, warnings, notes, output, mode, suffix)
 
     #Only supported on linux
     copy_clipboard(output)

@@ -59,7 +59,7 @@ class Dot_Graph:
             for instruction in node.get_instructions():
                 inst = f"{instruction}"
                 if instruction.eliminated:
-                    instructions += f" dce- {inst} |"
+                    instructions += f" * {inst} |"
                 else:
                     instructions += f" {inst} |"
             instructions = instructions.rstrip(instructions[-1])

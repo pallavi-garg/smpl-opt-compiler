@@ -15,8 +15,8 @@ class File_Reader:
 
 class File_Writer:
 
-    def write(self, path, title, warnings, notes, content, mode = 'w'):
-        path = path[0:-5] + "_output.txt"
+    def write(self, path, title, warnings, notes, content, mode = 'w', suffix = ""):
+        path = path[0:-5] + f"_output_{suffix}.txt"
         try:
             with open(path, mode) as file:
                 if warnings is not None:
