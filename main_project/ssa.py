@@ -218,7 +218,6 @@ class SSA_Engine:
         for phi in to_delete:
             join_block.remove_instruction(phi)
         
-        self.common_sub_expression_candidates = []
         self.__update_modified(modified)
         
 
@@ -339,6 +338,7 @@ class SSA_Engine:
 
     def __propagate_kill_loop(self, join_block):
         to_delete = []
+        modified = []
         for instruction in join_block.get_instructions():
             if isinstance(instruction, IR_Kill):
                 if instruction.operand not in join_block.killed_arrays:
@@ -360,16 +360,23 @@ class SSA_Engine:
                     for use in load.use_chain:
                         if isinstance(use, IR_One_Operand) and use.operand == load:
                             use.operand = pre
+                            use.operand.use_chain.append(pre)
+                            modified.append(use)
                         if isinstance(use, IR_Two_Operand):
                             if use.operand1 == load:
                                 use.operand1 = pre
+                                use.operand1.use_chain.append(pre)
+                                modified.append(use)
                             if use.operand2 == load:
                                 use.operand2 = pre
+                                use.operand2.use_chain.append(pre)
+                                modified.append(use)
                     adda = load.operand
                     adda.get_container().remove_instruction(adda)
                     load.get_container().remove_instruction(load)
                     self.__search_ds.delete(load, opc.load)
         join_block.killed_arrays.clear()
+        self.__update_modified(modified)
 
     def end_loop_control_flow(self, right, join_block):
         self.__cfg.ordered_blocks.append(join_block)
@@ -379,6 +386,7 @@ class SSA_Engine:
         self.__current_block.branch_block = join_block
 
         self.__propagate_phi(join_block, self.__current_block, join_block)
+        self.common_sub_expression_candidates = []
         self.__cleanup_phi(join_block)
 
         if(len(self.__control_flow_main_blocks) == 0) and len(self.phis) > 0:
