@@ -47,10 +47,12 @@ def compile():
         return -1
     if run_dce:
         try:
-            
+            no_show = False
             dce = DE_Eliminator2()
-            dce.eliminate(control_flow_graph, False)
-            notes = ''#'\n\n-----Eliminated following instructions-----\n'
+            dce.eliminate(control_flow_graph, no_show)
+            notes = ''
+            if no_show:
+                notes = '\n\n-----Eliminated following instructions-----\n'
 
             for note in dce.notes:
                 if len(dce.notes[note]) > 0:
