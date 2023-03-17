@@ -61,13 +61,13 @@ class DE_Eliminator2:
 
         if noshow == True:
             graph.clean_up()
-        '''
+        
         for instruction in defs:
             if isinstance(instruction, IR_One_Operand) and  isinstance(instruction.operand, Basic_Block):
                 instruction.operand = self.__get_instruction(instruction.operand)
             elif isinstance(instruction, IR_Two_Operand) and  isinstance(instruction.operand2, Basic_Block):
                 instruction.operand2 = self.__get_instruction(instruction.operand2)
-        '''
+        
     def __get_instruction(self, block):
         instruction = block
         for i in block.get_instructions():

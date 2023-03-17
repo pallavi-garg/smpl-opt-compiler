@@ -1,5 +1,5 @@
 from .cfg import Control_Flow_Graph as cfg
-from .intermediate_representation import IR_One_Operand
+from .intermediate_representation import IR_One_Operand, IR_OP
 
 class Dot_Graph:
 # class that creates dot graph presentation graph of given cfg
@@ -47,6 +47,8 @@ class Dot_Graph:
             if len(node.get_instructions()) > 0:
                 last_instruction = node.get_instructions()[-1]
                 if isinstance(last_instruction, IR_One_Operand) and last_instruction.operand == node.fall_through_block:
+                    fallthrough = branch
+                elif last_instruction.op_code == IR_OP.bra:
                     fallthrough = branch
             self.__relations.append(f"{node}:s -> {node.fall_through_block} {fallthrough};")
         
