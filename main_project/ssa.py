@@ -290,7 +290,7 @@ class SSA_Engine:
                         to_delete.add(original_instruction)
 
                 else:
-                    for block in reversed(all_blocks):
+                    for block in all_blocks:
                         for block_instruction in block.get_instructions():
                             if block_instruction.op_code == original_instruction.op_code and block_instruction != original_instruction:
                                 dupe_instruction = self.__search_ds.get_next(block_instruction)
