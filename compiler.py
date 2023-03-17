@@ -58,7 +58,7 @@ def compile():
                     for r in dce.notes[note]:
                         notes = notes + f'{r}\n'
 
-            write_output(control_flow_graph, warnings, notes, file_path, 'After DCE', 'a', 'dce')
+            write_output(control_flow_graph, warnings, notes, file_path, 'After DCE', 'w', 'dce')
 
         except Exception as ex:
             print(f'\n\n\nException occurred during DCE: {ex}')
