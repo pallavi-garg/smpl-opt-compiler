@@ -11,7 +11,7 @@ class IR:
         IR.__next_ir_number += 1
         return num
 
-    def __init__(self, op_code, container = None):
+    def __init__(self, op_code, container):
         self.instruction_number = IR.get_next_ir_number()
         self.op_code = op_code
         self.prev_search_ds = None
@@ -53,7 +53,7 @@ class IR:
     
 class IR_One_Operand(IR):
 # Intermediate Representation with 1 operand
-    def __init__(self, op_code, operand, container = None):
+    def __init__(self, op_code, operand, container):
         super().__init__(op_code, container)
         self.operand = operand
     
@@ -68,7 +68,7 @@ class IR_One_Operand(IR):
 
 class IR_Two_Operand(IR):
 # Intermediate Representation with 2 operands
-    def __init__(self, op_code, operand1, operand2, container = None):
+    def __init__(self, op_code, operand1, operand2, container):
         super().__init__(op_code, container)
         self.operand1 = operand1
         self.operand2 = operand2
@@ -84,7 +84,7 @@ class IR_Two_Operand(IR):
     
 class IR_Phi(IR_Two_Operand):
 # Intermediate Representation with 2 operands
-    def __init__(self, operand1, operand2, container = None, var = None):
+    def __init__(self, operand1, operand2, container, var = None):
         super().__init__(IR_OP.phi, operand1, operand2, container)
         self.var = var
     
@@ -138,20 +138,20 @@ class IR_Kill(IR_One_Operand):
         return self.instruction_number
     
 class IR_Load(IR_One_Operand):
-    def __init__(self, operand, prev_load, container = None, var = None):
+    def __init__(self, operand, prev_load, array, container):
         super().__init__(IR_OP.load, operand, container)
         self.prev_load = prev_load
-        self.var = var
+        self.array = array
 
     def __str__(self):
-        return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.operand)} ---{self.var}"
+        return f"({self.instruction_number}) : {self.op_code} {self.format_operand(self.operand)} ---{self.array.array_name}"
     
     def __hash__(self) -> int:
         return self.instruction_number
     
 class IR_Store(IR_Two_Operand):
 
-    def __init__(self, operand1, operand2, container = None, var = None, id = None):
+    def __init__(self, operand1, operand2, container, var = None, id = None):
         super().__init__(IR_OP.store, operand1, operand2, container)
         self.var = var
         self.id = id

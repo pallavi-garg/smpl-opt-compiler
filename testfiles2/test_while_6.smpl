@@ -4,7 +4,8 @@ array[5] arr;
 {
     let a <- 1;
     if arr[a] < 10 then
-        call OutputNum(a)
+        call OutputNum(a);
+        let arr[a] <- 10*8;
     fi;
     while arr[a] < 10 do
         let b <- a + 1;

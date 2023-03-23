@@ -2,7 +2,7 @@ from .intermediate_representation import IR, IR_One_Operand, IR_Two_Operand, IR_
 from .cfg import Control_Flow_Graph, Basic_Block as bb
 from .search_data_structure import search_ds
 
-class SSA_Engine:
+class SSA_Engine_Old:
     # holds objects required in SSA calculations
     def __init__(self):
         self.uninitialized_instruction = IR_One_Operand(opc.undefined, 0, None) # 0 is default value of all numbers
@@ -19,6 +19,8 @@ class SSA_Engine:
         self.__base_address = None
         self.__all_join_blocks = []
         self.__only_while_join_blocks = []
+        self.phis = []
+        self.common_sub_expression_candidates = []
     
     def get_cfg(self):
     # returns cfg        
@@ -187,7 +189,7 @@ class SSA_Engine:
     
     def __cleanup_phi(self, join_block):
         to_delete = []
-        updated = False
+        modified = []
         for phi_instruction in join_block.get_instructions():
             if isinstance(phi_instruction, IR_Phi):
                 if phi_instruction.instruction_number == phi_instruction.operand2.instruction_number \
@@ -195,16 +197,16 @@ class SSA_Engine:
                     for instruction in phi_instruction.use_chain:
                         if isinstance(instruction, IR_One_Operand) and instruction.operand == phi_instruction:
                             instruction.operand = phi_instruction.operand1
-                            updated = True
+                            modified.append(instruction)
                             instruction.operand.use_chain.append(instruction)
                         elif isinstance(instruction, IR_Two_Operand):
                             if instruction.operand1 == phi_instruction:
                                 instruction.operand1 = phi_instruction.operand1
-                                updated = True
+                                modified.append(instruction)
                                 instruction.operand1.use_chain.append(instruction)
                             if instruction.operand2 == phi_instruction:
                                 instruction.operand2 = phi_instruction.operand1
-                                updated = True
+                                modified.append(instruction)
                                 instruction.operand2.use_chain.append(instruction)
                     to_delete.append(phi_instruction)
                 # DONOT remove phis with no use yet this as this phi could have a use at end of the program for variable w - test_while_1.smpl
@@ -216,50 +218,100 @@ class SSA_Engine:
         for phi in to_delete:
             join_block.remove_instruction(phi)
         
-        return updated
+        self.__update_modified(modified)
+        
 
-    def __perform_common_sub_expression_in_loop(self, join_block):
-        common_sub_expression_candidates = []
-        to_delete = set()
-        for block in reversed(self.__cfg.get_blocks()):
-            if block == join_block:
-                common_sub_expression_candidates.extend(reversed(join_block.get_instructions()))
-                break
-            common_sub_expression_candidates.extend(reversed(block.get_instructions()))
+    def __update_modified(self, modified_instructions, just_phis = False):
+        while(len(modified_instructions) != 0):
+            instruction = modified_instructions.pop()
+            original_instruction = self.__search_ds.get_next(instruction)
+            if just_phis == True and instruction.op_code == opc.phi and instruction.operand1 == instruction.operand2:
+                original_instruction = instruction.operand1
 
-        while(len(common_sub_expression_candidates) > 0):
-            original_instruction = common_sub_expression_candidates.pop()
-            if original_instruction.op_code == opc.phi and original_instruction.operand1 == original_instruction.operand2:
-                dupe_instruction = original_instruction.operand1
-            elif (original_instruction.op_code == opc.load):
-                adda = original_instruction.operand
-                dupe_instruction, _ = self.__search_ds.get_load(opc.load, original_instruction.array, adda.operand1, adda.operand2, original_instruction.get_container(), original_instruction.instruction_number)  
-                if dupe_instruction is not None:
-                    to_delete.add(adda)
-            else:
-                dupe_instruction = self.__search_ds.get_next(original_instruction)
-                
-            if dupe_instruction is not None:
-                self.__search_ds.delete(original_instruction)
-                for used in original_instruction.use_chain:
-                    if isinstance(used, IR_One_Operand) and used.operand == original_instruction:
-                        used.operand = dupe_instruction
-                        common_sub_expression_candidates.append(used)
+            if original_instruction is None and instruction.op_code in [opc.add, opc.sub, opc.mul, opc.div, opc.cmp]:
+                self.common_sub_expression_candidates.append(instruction)
+
+            if original_instruction is not None:
+                self.__search_ds.delete(instruction)
+                block = instruction.get_container()
+                block.remove_instruction(instruction)
+                if just_phis == True:
+                    for id in block.symbol_table:
+                        if block.symbol_table[id] == instruction:
+                            block.symbol_table[id] = original_instruction
+                            break
+
+                for used in instruction.use_chain:
+                    if isinstance(used, IR_One_Operand) and used.operand == instruction:
+                        used.operand = original_instruction
+                        modified_instructions.append(used)
                         used.operand.use_chain.append(used)
                     if isinstance(used, IR_Two_Operand):
-                        if used.operand1 == original_instruction:
-                            used.operand1 = dupe_instruction
+                        if used.operand1 == instruction:
+                            used.operand1 = original_instruction
+                            modified_instructions.append(used)
                             used.operand1.use_chain.append(used)
-                            common_sub_expression_candidates.append(used)
-                        if used.operand2 == original_instruction:
-                            used.operand2 = dupe_instruction
+                        if used.operand2 == instruction:
+                            used.operand2 = original_instruction
+                            modified_instructions.append(used)
                             used.operand2.use_chain.append(used)
-                            common_sub_expression_candidates.append(used)
+            elif just_phis == False and instruction.isdeleted == False and isinstance(instruction, IR_Phi) and instruction.operand1 == instruction.operand2:
+                self.phis.append(instruction)
 
-                to_delete.add(original_instruction)
-        
-        for instruction in to_delete:
-            instruction.get_container().remove_instruction(instruction)
+    def __perform_common_sub_expression_in_loop(self, join_block):
+        if len(self.common_sub_expression_candidates) > 0:
+            to_delete = set()
+            all_blocks = []
+            blocks = self.__cfg.get_blocks()
+            for block in reversed(blocks):
+                if block == join_block:
+                    all_blocks.append(block)
+                    break
+                all_blocks.append(block)
+
+            while(len(self.common_sub_expression_candidates) > 0):
+                original_instruction = self.common_sub_expression_candidates.pop()
+                if original_instruction.op_code == opc.phi:
+                    if original_instruction.operand1 == original_instruction.operand2:
+                        for used in original_instruction.use_chain:
+                            if isinstance(used, IR_One_Operand) and used.operand == original_instruction:
+                                used.operand = original_instruction.operand1
+                                self.common_sub_expression_candidates.append(used)
+                                used.operand.use_chain.append(used)
+                            if isinstance(used, IR_Two_Operand):
+                                if used.operand1 == original_instruction:
+                                    used.operand1 = original_instruction.operand1
+                                    self.common_sub_expression_candidates.append(used)
+                                    used.operand1.use_chain.append(used)
+                                if used.operand2 == original_instruction:
+                                    used.operand2 = original_instruction.operand1
+                                    self.common_sub_expression_candidates.append(used)
+                                    used.operand2.use_chain.append(used)
+                        to_delete.add(original_instruction)
+
+                else:
+                    for block in all_blocks:
+                        for block_instruction in block.get_instructions():
+                            if block_instruction.op_code == original_instruction.op_code and block_instruction != original_instruction:
+                                dupe_instruction = self.__search_ds.get_next(block_instruction)
+                                if dupe_instruction is not None:
+                                    for used in block_instruction.use_chain:
+                                        if isinstance(used, IR_One_Operand) and used.operand == block_instruction:
+                                            used.operand = dupe_instruction
+                                            self.common_sub_expression_candidates.append(used)
+                                            used.operand.use_chain.append(used)
+                                        if isinstance(used, IR_Two_Operand):
+                                            if used.operand1 == block_instruction:
+                                                used.operand1 = dupe_instruction
+                                                self.common_sub_expression_candidates.append(used)
+                                                used.operand1.use_chain.append(used)
+                                            if used.operand2 == block_instruction:
+                                                used.operand2 = dupe_instruction
+                                                self.common_sub_expression_candidates.append(used)
+                                                used.operand2.use_chain.append(used)
+                                    to_delete.add(block_instruction)
+            for instruction in to_delete:
+                instruction.get_container().remove_instruction(instruction)
         
     def __propagate_phi(self, left_block, right_block, join_block, create_new = False):  
 
@@ -286,7 +338,7 @@ class SSA_Engine:
 
     def __propagate_kill_loop(self, join_block):
         to_delete = []
-        updated = False
+        modified = []
         for instruction in join_block.get_instructions():
             if isinstance(instruction, IR_Kill):
                 if instruction.operand not in join_block.killed_arrays:
@@ -300,9 +352,31 @@ class SSA_Engine:
         for kill in to_delete:           
             join_block.remove_instruction(kill)
             self.__search_ds.delete(kill, opc.load)
-            
+            for load in kill.loads:
+                pre = load.prev_load
+                if pre is None:
+                    pre, _ = self.__search_ds.get_load(opc.load, kill.operand, load.operand.operand1, load.operand.operand2, load.get_container(), load.instruction_number)
+                if pre is not None:
+                    for use in load.use_chain:
+                        if isinstance(use, IR_One_Operand) and use.operand == load:
+                            use.operand = pre
+                            use.operand.use_chain.append(pre)
+                            modified.append(use)
+                        if isinstance(use, IR_Two_Operand):
+                            if use.operand1 == load:
+                                use.operand1 = pre
+                                use.operand1.use_chain.append(pre)
+                                modified.append(use)
+                            if use.operand2 == load:
+                                use.operand2 = pre
+                                use.operand2.use_chain.append(pre)
+                                modified.append(use)
+                    adda = load.operand
+                    adda.get_container().remove_instruction(adda)
+                    load.get_container().remove_instruction(load)
+                    self.__search_ds.delete(load, opc.load)
         join_block.killed_arrays.clear()
-        return updated
+        self.__update_modified(modified)
 
     def end_loop_control_flow(self, right, join_block):
         self.__cfg.ordered_blocks.append(join_block)
@@ -312,11 +386,15 @@ class SSA_Engine:
         self.__current_block.branch_block = join_block
 
         self.__propagate_phi(join_block, self.__current_block, join_block)
-        updated_phis = self.__cleanup_phi(join_block)
+        self.common_sub_expression_candidates = []
+        self.__cleanup_phi(join_block)
+
+        if(len(self.__control_flow_main_blocks) == 0) and len(self.phis) > 0:
+            self.__update_modified(self.phis, True)
+            self.phis.clear()
         
-        updated_kills = self.__propagate_kill_loop(join_block)
-        if updated_phis or updated_kills:
-            self.__perform_common_sub_expression_in_loop(join_block)
+        self.__propagate_kill_loop(join_block)
+        self.__perform_common_sub_expression_in_loop(join_block)
 
         self.__current_block = right
         self.__cfg.ordered_blocks.append(self.__current_block)
