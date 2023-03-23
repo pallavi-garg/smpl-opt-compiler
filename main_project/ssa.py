@@ -229,16 +229,20 @@ class SSA_Engine:
 
         while(len(common_sub_expression_candidates) > 0):
             original_instruction = common_sub_expression_candidates.pop()
+            
             if original_instruction.op_code == opc.phi and original_instruction.operand1 == original_instruction.operand2:
                 dupe_instruction = original_instruction.operand1
             elif (original_instruction.op_code == opc.load):
                 adda = original_instruction.operand
-                dupe_instruction, _ = self.__search_ds.get_load(opc.load, original_instruction.array, adda.operand1, adda.operand2, original_instruction.get_container(), original_instruction.instruction_number)  
+                dupe_instruction, kill = self.__search_ds.get_load(opc.load, original_instruction.array, adda.operand1, adda.operand2, original_instruction.get_container(), original_instruction.instruction_number)  
                 if dupe_instruction is not None:
-                    to_delete.add(adda)
+                    if kill is not None and kill.instruction_number < original_instruction.instruction_number and kill.instruction_number > dupe_instruction.instruction_number:
+                        dupe_instruction = None
+                    else:
+                        to_delete.add(adda)
             else:
                 dupe_instruction = self.__search_ds.get_next(original_instruction)
-                
+
             if dupe_instruction is not None:
                 self.__search_ds.delete(original_instruction)
                 for used in original_instruction.use_chain:
