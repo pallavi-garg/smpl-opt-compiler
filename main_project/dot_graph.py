@@ -8,18 +8,28 @@ class Dot_Graph:
         self.__declarations = []
         self.__relations = []
 
-    def get_representation(self, graph):
+    def get_representation(self, graphs):
+        representation = "digraph G {\ngraph [nodesep=0.5 ranksep=0.75]"
+        for name, graph in graphs.items():
+            representation += "\nsubgraph cluster_"
+            representation += name
+            representation += "\n{label="
+            representation += f"{name}\n"
+            representation += self.__get_representation(graph)
+            representation += '\n}'
+        representation += '\n}'
+        return representation
+
+    def __get_representation(self, graph):  
+        representation = ""
         for block in graph.get_blocks():
             self.__traverse_node(block)
-        representation = "digraph G {\n"
         
         for declaration in self.__declarations:
             representation += f"{declaration}\n"
 
         for relation in self.__relations:
             representation += f"{relation}\n"
-
-        representation += '}'
 
         self.__declarations.clear()
         self.__relations.clear()

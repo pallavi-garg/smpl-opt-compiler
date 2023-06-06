@@ -25,7 +25,9 @@ class IR:
         return f"({self.instruction_number}) : {self.op_code}"
     
     def format_operand(self, operand):
-        if(isinstance(operand, numbers.Number)) or operand == IR_Memory_Allocation.Base_Address:
+        if self.op_code == IR_OP.param and isinstance(operand, numbers.Number):
+            return f"-{operand}"
+        elif(isinstance(operand, numbers.Number)) or operand == IR_Memory_Allocation.Base_Address:
             return f"#{operand}"
         elif(isinstance(operand, IR)):
             if operand.op_code == IR_OP.undefined:
@@ -190,3 +192,6 @@ class IR_OP:
     undefined = 'undefined' # value = 0, it identifies operands which are uninitialized.
     kill = 'kill' # kill x -> forget load history of array_id
     malloc = 'malloc'
+    ret = 'return'
+    param = 'param'
+    call = 'call'

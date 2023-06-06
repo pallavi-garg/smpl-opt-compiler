@@ -26,18 +26,22 @@ class Parser:
         self.__tokenizer = Tokenizer(input_string)
         self.warnings = []
         self.__ssa = SSA_Engine()
+        self.__contexts = {}
+        self.__main_ssa = self.__ssa
 
     def parse(self):
     # entry point for this parser
         self.__consume(Token_Type.Main)
         self.__consume_type_declaration()
         self.__consume_fn_declarations()
+        self.__ssa = self.__main_ssa
         self.__consume(Token_Type.Begin)
         self.__consume_sequence_statements()
         self.__consume(Token_Type.End)
         self.__consume(Token_Type.Period)
         self.__ssa.create_instruction(opc.end)
-        return self.__ssa.get_cfg()
+        self.__contexts['main'] = self.__ssa.get_cfg()
+        return self.__contexts
     
     def get_cfg(self):
         return self.__ssa.get_cfg()
@@ -112,10 +116,47 @@ class Parser:
         if declaration and len(dimensions) == 0:
             self.__syntax_error("Indexing missing for array declaration.")
         return dimensions
+    
+    def __read_formal_parameters(self):
+        self.__consume(Token_Type.OpenParanthesis)
+        counter = 1
+        while self.__tokenizer.token and self.__tokenizer.token.type in [Token_Type.Identifier, Token_Type.Comma]:
+            if self.__tokenizer.token.type == Token_Type.Comma:
+                self.__consume(self.__tokenizer.token.type)
+            self.__variable_declaration(True, counter)
+            counter += 1
+        self.__consume(Token_Type.CloseParanthesis)
+
+    def __consume_function_definition(self):
+        self.__consume_type_declaration()
+        self.__consume(Token_Type.Begin)
+        self.__consume_sequence_statements()
+        self.__consume(Token_Type.End)
 
     def __consume_fn_declarations(self):
     # consumes function declaration
-        pass
+        need_return = True
+        while self.__tokenizer.token and self.__tokenizer.token.type in [Token_Type.Function, Token_Type.Void]:
+            if self.__tokenizer.token.type == Token_Type.Void:
+                self.__consume(Token_Type.Void)
+                need_return = False
+            self.__consume(Token_Type.Function)
+            if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Identifier:
+                if self.__tokenizer.token.val in self.__contexts:
+                    self.__syntax_error("Cannot declare same function twice.")
+                else:
+                    self.__ssa = SSA_Engine()
+                    function_name = self.__tokenizer.token.id
+                    self.__consume(Token_Type.Identifier)
+                    self.__read_formal_parameters()
+                    self.__consume(Token_Type.SemiColon)
+                    self.__consume_function_definition()
+                    self.__consume(Token_Type.SemiColon)
+                    if need_return:
+                        self.__ssa.finish_function()
+                    self.__contexts[function_name] = self.__ssa.get_cfg()
+            else:
+                self.__syntax_error("Expected function name but not found")
 
     def __consume_sequence_statements(self):
     # consumes multiple statement declarations
@@ -144,16 +185,20 @@ class Parser:
 
     def __handle_function_call(self):
     # handles predefined function call
-        if self.__tokenizer.token.type not in [Token_Type.Fn_OutputNum, Token_Type.Fn_OutputNewLine]:
+        if self.__tokenizer.token.type not in [Token_Type.Fn_OutputNum, Token_Type.Fn_OutputNewLine] and self.__tokenizer.token.id not in self.__contexts:
             self.__syntax_error("Invalid function name!")
-        while self.__tokenizer.token and self.__tokenizer.token.type in [Token_Type.Fn_OutputNum, Token_Type.Fn_OutputNewLine]:
+        while self.__tokenizer.token and (self.__tokenizer.token.type in [Token_Type.Fn_OutputNum, Token_Type.Fn_OutputNewLine] or self.__tokenizer.token.id in self.__contexts):
             fn_type = self.__tokenizer.token.type
-            self.__consume(self.__tokenizer.token.type)
             if fn_type in [Token_Type.Fn_OutputNum]:
+                self.__consume(fn_type)
                 self.__ssa.create_instruction(opc.write, self.__expression())
-            else:
+                self.__consume(Token_Type.CloseParanthesis)
+            elif fn_type in [Token_Type.Fn_OutputNewLine]:
+                self.__consume(fn_type)
                 self.__ssa.create_instruction(opc.writeNL)
-            self.__consume(Token_Type.CloseParanthesis)
+                self.__consume(Token_Type.CloseParanthesis)
+            else:
+                self.__handle_user_defined_function_call()
         
     def __handle_assignment(self):
     # handles assignment to identifier
@@ -168,12 +213,16 @@ class Parser:
         else:
             self.__syntax_error("Expected identifier assignment")
 
-    def __variable_declaration(self):
+    def __variable_declaration(self, isParam = False, counter = 0):
     # handle variable declaration
         if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Identifier:
             if self.__ssa.is_already_declared(self.__tokenizer.token.id):
                 self.__syntax_error("Cannot declare same variable twice.")
-            self.__insert_identifier(self.__tokenizer.token.id)
+            if isParam:
+                instruction, _ = self.__ssa.create_instruction(opc.param, counter, isParam)
+                self.__insert_identifier(self.__tokenizer.token.id, instruction)
+            else: 
+                self.__insert_identifier(self.__tokenizer.token.id)
             self.__consume(Token_Type.Identifier)
         else:
              self.__syntax_error("Expected identifier but not found")
@@ -233,9 +282,12 @@ class Parser:
                 instruction = self.__look_up(id)
             elif self.__tokenizer.token.type == Token_Type.Call:
                 self.__consume(Token_Type.Call)
-                self.__consume(Token_Type.Fn_InputNum)
-                self.__consume(Token_Type.CloseParanthesis)
-                instruction, _ = self.__ssa.create_instruction(opc.read)
+                if self.__tokenizer.token.type == Token_Type.Fn_InputNum:
+                    self.__consume(Token_Type.Fn_InputNum)
+                    self.__consume(Token_Type.CloseParanthesis)
+                    instruction, _ = self.__ssa.create_instruction(opc.read)
+                else:
+                    instruction, _ = self.__handle_user_defined_function_call()
         else:
             self.__syntax_error("Syntax error in factor")
         return instruction
@@ -291,4 +343,16 @@ class Parser:
         self.__ssa.end_loop_control_flow(right_block, join_block)
         
     def __handle_return_statement(self):
-        self.__syntax_error("Return statement not supported!")
+        self.__ssa.create_instruction(opc.ret, self.__expression())
+
+    def __handle_user_defined_function_call(self):
+        funtion_name = self.__tokenizer.token.id
+        self.__consume(Token_Type.Identifier)
+        if self.__tokenizer.token.type == Token_Type.OpenParanthesis:
+            self.__consume(Token_Type.OpenParanthesis)
+            while self.__tokenizer.token and self.__tokenizer.token.type != Token_Type.CloseParanthesis:
+                self.__ssa.create_instruction(opc.param, self.__expression())
+                if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Comma:
+                    self.__consume(Token_Type.Comma)
+            self.__consume(Token_Type.CloseParanthesis)
+        return self.__ssa.create_instruction(opc.call, funtion_name)

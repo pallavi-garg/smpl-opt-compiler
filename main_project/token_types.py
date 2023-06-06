@@ -39,7 +39,8 @@ class Token_Type:
     Fn_InputNum = re.compile(r"InputNum( )*\(")
     Fn_OutputNewLine = re.compile(r"OutputNewLine( )*\(")
     Array = 'array'
-
+    Function = 'function '
+    Void = 'void '
 
     def __init__(self):
     # Order is the precendence order in which the tokens should be matched
@@ -82,6 +83,7 @@ class Token_Type:
         self.reserved_token_list.append(self.Then)
         self.reserved_token_list.append(self.Call)
         self.reserved_token_list.append(self.Main)
+        self.reserved_token_list.append(self.Void)
 
         #bigger
         self.reserved_token_list.append(self.While)
@@ -94,6 +96,7 @@ class Token_Type:
         self.reserved_token_list.append(self.Fn_InputNum)
         self.reserved_token_list.append(self.Fn_OutputNum)
         self.reserved_token_list.append(self.Fn_OutputNewLine)
+        self.reserved_token_list.append(self.Function)
 
     def get_tokens(self):
     # returns list of tokens that are supported by tokenizer

@@ -337,13 +337,13 @@ class SSA_Engine:
             if opcode in [opc.add, opc.sub, opc.mul, opc.div, opc.cmp, opc.bne, opc.beq, opc.ble, opc.blt, opc.bge, opc.bgt]:
                 instruction = IR_Two_Operand(opcode, operand1, operand2, self.__current_block)
                 self.__current_block.add_instruction(instruction)
-            elif opcode in [opc.end, opc.read, opc.writeNL]:
+            elif opcode in [opc.end, opc.read, opc.writeNL] or (opcode == opc.ret and operand1 == None):
                 instruction = IR(opcode, self.__current_block)
                 self.__current_block.add_instruction(instruction)
-            elif opcode in [opc.bra, opc.write]:
+            elif opcode in [opc.bra, opc.write, opc.ret, opc.call] or (opcode == opc.param and operand2 == None):
                 instruction = IR_One_Operand(opcode, operand1, self.__current_block)
                 self.__current_block.add_instruction(instruction)
-            elif opcode == opc.const:
+            elif opcode == opc.const or (opcode == opc.param and operand2):
                 instruction = IR_One_Operand(opcode, operand1, self.__root_block)
                 self.__root_block.add_instruction(instruction)
             elif opcode == opc.malloc:
@@ -446,5 +446,9 @@ class SSA_Engine:
             self.__current_block.add_instruction(instruction)
             self.__search_ds.add(opc.load, instruction)
         return instruction
+    
+    def finish_function(self):
+        if len(self.__current_block.get_instructions()) == 0 or self.__current_block.get_instructions()[-1].op_code != opc.ret:
+            self.create_instruction(opc.ret)
 
         
