@@ -27,7 +27,7 @@ class IR:
     
     def format_operand(self, operand):
         if self.op_code == IR_OP.param and isinstance(operand, numbers.Number):
-            return f"-{operand}"
+            return f"#{operand}"
         elif(isinstance(operand, numbers.Number)) or operand == IR_Memory_Allocation.Base_Address:
             return f"#{operand}"
         elif(isinstance(operand, IR)):
