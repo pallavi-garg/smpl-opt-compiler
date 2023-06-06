@@ -1,11 +1,11 @@
-# Author: Pallavi Garg
+## Author: Pallavi Garg
 pallavg1@uci.edu
 
-# Prerequisites:
+## Prerequisites:
   - Python3.10 or higher
   - xclip for running on Linux machine
 
-# Instructions:
+## Instructions:
 
 Run following command to run the program:
     
@@ -22,10 +22,10 @@ Run following command to run the program:
    
         > cd warmup_project2
         > python3.10 main.py "computation var i <- 2*3; var ab <- 7; (((ab * i))); i - 5 - 1 ."
-# Viewing Output
+## Viewing Output
 Output is viewed [here](http://www.webgraphviz.com/)
 
-# Some Examples
+## Some Examples
 
 1. If-Else program in SMPL language:
    ```
