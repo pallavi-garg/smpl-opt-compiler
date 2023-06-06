@@ -47,7 +47,8 @@ Output is viewed [here](http://www.webgraphviz.com/)
     }.
 
    ```
-   Output: ![if-else]()
+   Output: 
+   ![if-else](/docs/if-else.png)
 
 2. While loop program in SMPL language:
    ```
@@ -70,7 +71,8 @@ Output is viewed [here](http://www.webgraphviz.com/)
         call OutputNum(y)
     }.
    ```
-   Output: ![while-loop]()
+   Output: 
+   ![while-loop](/docs/while-loop.png)
 
 3. Array in SMPL language:
    ```
@@ -88,7 +90,8 @@ Output is viewed [here](http://www.webgraphviz.com/)
         call OutputNum(arr[i])
     }.
    ```
-   Output: ![arrays]()
+   Output: 
+   ![arrays](/docs/arrays.png)
 
 4. Functions:
    ```
@@ -103,9 +106,10 @@ Output is viewed [here](http://www.webgraphviz.com/)
         call OutputNum(call test(a, b));
     }.
    ```
-   Output: ![functions]()
+   Output: 
+   ![functions](/docs/functions.png)
 
-- * marks the dead instructions and are shown here just for illustration.
+- `*` marks the dead instructions and are shown here just for illustration.
 - Kill statements are also shown for illustration.
 
 # Assumptions
