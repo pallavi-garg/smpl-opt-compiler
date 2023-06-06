@@ -16,3 +16,5 @@ Run following command to run the program:
     For project 2:
         cd warmup_project2
         python3.10 main.py "computation var i <- 2*3; var ab <- 7; (((ab * i))); i - 5 - 1 ."
+
+Output is viewed [here](http://www.webgraphviz.com/)
