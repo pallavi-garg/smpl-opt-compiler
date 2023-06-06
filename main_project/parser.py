@@ -287,7 +287,7 @@ class Parser:
                     self.__consume(Token_Type.CloseParanthesis)
                     instruction, _ = self.__ssa.create_instruction(opc.read)
                 else:
-                    instruction, _ = self.__handle_user_defined_function_call()
+                    instruction = self.__handle_user_defined_function_call()
         else:
             self.__syntax_error("Syntax error in factor")
         return instruction
@@ -355,4 +355,7 @@ class Parser:
                 if self.__tokenizer.token and self.__tokenizer.token.type == Token_Type.Comma:
                     self.__consume(Token_Type.Comma)
             self.__consume(Token_Type.CloseParanthesis)
-        return self.__ssa.create_instruction(opc.call, funtion_name)
+        instruction, _ = self.__ssa.create_instruction(opc.call, funtion_name)
+        instruction.set_calling_info(funtion_name)
+
+        return instruction

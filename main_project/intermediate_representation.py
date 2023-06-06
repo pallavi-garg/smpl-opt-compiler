@@ -20,6 +20,7 @@ class IR:
         self.use_chain = [] 
         self.eliminated = False
         self.isdeleted = False
+        self.__called_funtion_name = None
 
     def __str__(self):
         return f"({self.instruction_number}) : {self.op_code}"
@@ -52,6 +53,12 @@ class IR:
     
     def __hash__(self) -> int:
         return self.instruction_number
+    
+    def set_calling_info(self, funtion_name):
+        self.__called_funtion_name = funtion_name
+
+    def get_calling_info(self):
+        return self.__called_funtion_name
     
 class IR_One_Operand(IR):
 # Intermediate Representation with 1 operand
