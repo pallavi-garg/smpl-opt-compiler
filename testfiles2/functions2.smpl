@@ -1,0 +1,29 @@
+main var i,j,x,y;
+void function repeat();
+var x, y, i, j;
+{
+    while x < 10 do
+        let x <- i;
+        let y <-  j ;
+        if y < 1 then
+            while y < 10 do
+                let x <- i;
+                let y <- j ;
+            od;
+        fi;
+    od
+};
+{
+    while x < 10 do
+        let x <- i;
+        let y <-  j ;
+        if y < 1 then
+            while y < 10 do
+                let x <- i;
+                let y <- j ;
+            od;
+        fi;
+    od;
+
+    call repeat;
+}.

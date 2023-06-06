@@ -1,0 +1,11 @@
+main var a; array[2] b;
+function test(c, n);{
+    if n==1 then
+        return 1
+    else
+        return c * call test(c, n - 1)
+    fi
+};
+{
+    call OutputNum(call test(b[a], 5))
+}.

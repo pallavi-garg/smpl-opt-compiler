@@ -7,19 +7,37 @@ class Dot_Graph:
     def __init__(self):
         self.__declarations = []
         self.__relations = []
+        self.__callings = {}
 
-    def get_representation(self, graph):
+    def get_representation(self, graphs):
+        representation = "digraph G {\ngraph [nodesep=0.5 ranksep=0.75]"
+        for name, graph in graphs.items():
+            representation += "\nsubgraph cluster_"
+            representation += name
+            representation += "\n{label="
+            representation += f"{name}\n"
+            representation += self.__get_representation(graph)
+            representation += '\n}'
+        
+        for caller, callee in self.__callings.items():
+            block = graphs[callee].get_blocks()[0]
+            representation += f"{caller} -> {block}:n [label=call style=dotted]"
+        
+        representation += '\n}'
+
+        self.__callings.clear()
+        return representation
+
+    def __get_representation(self, graph):  
+        representation = ""
         for block in graph.get_blocks():
             self.__traverse_node(block)
-        representation = "digraph G {\n"
         
         for declaration in self.__declarations:
             representation += f"{declaration}\n"
 
         for relation in self.__relations:
             representation += f"{relation}\n"
-
-        representation += '}'
 
         self.__declarations.clear()
         self.__relations.clear()
@@ -60,6 +78,10 @@ class Dot_Graph:
         else:
             for instruction in node.get_instructions():
                 inst = f"{instruction}"
+                calling = instruction.get_calling_info()
+                if calling != None:
+                    inst = f"<{instruction.instruction_number}> {inst}"
+                    self.__callings[f"\n{instruction.get_container()}:{instruction.instruction_number}:_"] = calling
                 if instruction.eliminated:
                     instructions += f" * {inst} |"
                 else:
