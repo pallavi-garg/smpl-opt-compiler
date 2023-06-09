@@ -48,6 +48,8 @@ Output is viewed [here](http://www.webgraphviz.com/)
 
    ```
    Output: 
+   Here instruction number 2 is reused in 6.
+   
    ![if-else](/docs/if-else.png)
 
 2. While loop program in SMPL language:
