@@ -117,3 +117,6 @@ Output is viewed [here](http://www.webgraphviz.com/)
 # Assumptions
 
 1. No two variables and functions will have same name.
+2. Arrays cannot be passed to the functions.
+3. Functions can only return a scalar.
+4. Global variables are not accessible from within the functions.
