@@ -1,5 +1,5 @@
 import numbers
-from .cfg import Basic_Block
+from .basic_block import Basic_Block
 
 class IR:
 # Intermediate Representation

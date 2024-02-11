@@ -1,15 +1,19 @@
 import sys
 from main_project.parser import Parser
-from main_project.file_reader import File_Reader, File_Writer
+from main_project.file_reader import File_Reader
+from main_project.file_writer import File_Writer
 import argparse
 from main_project.dot_graph import Dot_Graph as dot
 from main_project.dead_code_emilinator import DE_Eliminator
+'''
 from subprocess import Popen, PIPE
 
+
 def copy_clipboard(msg):
-    ''' Copy `msg` to the clipboard '''
+    #Copy `msg` to the clipboard
     with Popen(['xclip','-selection', 'clipboard'], stdin=PIPE) as pipe:
         pipe.communicate(input=msg.encode('utf-8'))
+'''
 
 def get_warnings(parser):
     warnings = None
@@ -84,7 +88,7 @@ def write_output(control_flow_graphs, warnings, notes, file_path, title, mode = 
     writer.write(file_path, title, warnings, notes, output, mode, suffix)
 
     #Only supported on linux
-    copy_clipboard(output)
+    #copy_clipboard(output)
 
 if __name__ == "__main__":
     sys.exit(compile())

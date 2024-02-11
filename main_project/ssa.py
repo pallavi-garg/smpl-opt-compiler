@@ -1,5 +1,6 @@
 from .intermediate_representation import IR, IR_One_Operand, IR_Two_Operand, IR_OP as opc, IR_Phi, IR_Memory_Allocation, IR_Kill, IR_Store, IR_Load
-from .cfg import Control_Flow_Graph, Basic_Block as bb
+from .cfg import Control_Flow_Graph
+from .basic_block import Basic_Block as bb
 from .search_data_structure import search_ds
 
 class SSA_Engine:

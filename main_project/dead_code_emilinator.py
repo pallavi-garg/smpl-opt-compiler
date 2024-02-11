@@ -1,5 +1,5 @@
 from .intermediate_representation import IR_One_Operand, IR_OP, IR_Two_Operand, IR
-from .cfg import Basic_Block
+from .basic_block import Basic_Block
 
 class DE_Eliminator:        
 
